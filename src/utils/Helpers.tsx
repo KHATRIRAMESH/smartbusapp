@@ -1,6 +1,7 @@
-import { Href, router } from "expo-router";
+import { router } from "expo-router";
+import { AppRoute } from "./types";
 
-export const resetAndNavigate = (newPath: Href) => {
+export const resetAndNavigate = (newPath: AppRoute) => {
     if (router.canGoBack()) {
         router.dismissAll();
     }

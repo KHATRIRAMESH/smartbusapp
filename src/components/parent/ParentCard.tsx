@@ -1,52 +1,77 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { ParentProfile } from "@/utils/types";
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { CustomText } from '../shared/CustomText';
+import SettingModal from './SettingModal';
 
-interface ParentCardProps {
-  parentProfile: ParentProfile;
+interface ParentProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
 }
 
-const ParentCard: React.FC<ParentCardProps> = ({ parentProfile }) => (
-  <View style={styles.guardianCard}>
-    <View style={styles.guardianAvatarPlaceholder}>
-      <Text style={styles.guardianAvatarText}>{parentProfile.name.charAt(0).toUpperCase()}</Text>
-    </View>
-    <View style={{ flex: 1 }}>
-      <Text style={styles.guardianName}>
-        {parentProfile.name} <Text style={styles.guardianRelation}>(Parent)</Text>
-      </Text>
-      <Text style={styles.guardianContact}>{parentProfile.phone}</Text>
-      <Text style={styles.guardianContact}>{parentProfile.email}</Text>
-    </View>
-  </View>
-);
+interface ParentCardProps {
+  parent: ParentProfile | null | undefined;
+}
+
+const ParentCard: React.FC<ParentCardProps> = ({ parent }) => {
+  const [showSettings, setShowSettings] = React.useState(false);
+
+  if (!parent) {
+    return null;
+  }
+
+  return (
+    <>
+      <View style={styles.card}>
+        <View style={styles.info}>
+          <CustomText style={styles.name}>{parent.name}</CustomText>
+          <CustomText style={styles.detail}>{parent.email}</CustomText>
+          <CustomText style={styles.detail}>{parent.phone}</CustomText>
+        </View>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setShowSettings(true)}
+        >
+          <CustomText>⚙️</CustomText>
+        </TouchableOpacity>
+      </View>
+
+      <SettingModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        parent={parent}
+      />
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
-  guardianCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
+  card: {
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  guardianAvatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#2ecc71",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
+  info: {
+    flex: 1,
   },
-  guardianAvatarText: { fontSize: 16, fontWeight: "bold", color: "#fff" },
-  guardianName: { fontSize: 15, fontWeight: "bold" },
-  guardianRelation: { fontSize: 13, color: "#888" },
-  guardianContact: { fontSize: 13, color: "#888" },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  detail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  settingsButton: {
+    padding: 8,
+  },
 });
 
-export default React.memo(ParentCard); 
+export default ParentCard; 

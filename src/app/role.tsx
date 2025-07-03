@@ -3,14 +3,17 @@ import { roleStyles } from "@/styles/roleStyles";
 import { router } from "expo-router";
 import { Image, ScrollView, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 const Role = () => {
   // TODO: Implement parent authentication screen and update navigation path
   const handleParentPress = () => {
-    router.push("/screens/parent/auth");
+    router.push("/(parent)/auth" as any);
   };
+
   const handleDriverPress = () => {
-    router.push("/screens/driver/auth");
+    router.push("/(driver)/auth" as any);
   };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={roleStyles.container}>
@@ -31,6 +34,7 @@ const Role = () => {
             </CustomText>
           </View>
         </TouchableOpacity>
+
         <TouchableOpacity style={roleStyles.card} onPress={handleDriverPress}>
           <Image
             source={require("@/assets/images/driver-inside.jpg")}
@@ -48,4 +52,5 @@ const Role = () => {
     </SafeAreaView>
   );
 };
+
 export default Role;

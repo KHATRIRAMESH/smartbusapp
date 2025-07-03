@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import Constants from "expo-constants";
 
 // Get the server URL from environment variables or use defaults
 const getServerUrl = () => {

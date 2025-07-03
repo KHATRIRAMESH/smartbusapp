@@ -1,129 +1,51 @@
-import { tokenStorage } from "@/store/storage";
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { io, Socket } from "socket.io-client";
-import { SOCKET_URL } from "./config";
-import { refresh_tokens } from "./refreshService";
+import { io } from 'socket.io-client';
+import { SOCKET_URL } from './config';
 
-interface WSService {
-  initializeSocket: () => void;
-  emit: (event: string, data: any) => void;
-  on: (event: string, callback: (data: any) => void) => void;
-  off: (event: string, callback: (data: any) => void) => void;
-  removeListeners: (event: string) => void;
-  updateAccessToken: () => void;
-  disconnect: () => void;
+// Create socket instance without any dependencies
+export const socket = io(SOCKET_URL, {
+  autoConnect: false,
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  timeout: 10000,
+});
+
+// Add event listeners for debugging
+if (__DEV__) {
+  socket.on('connect', () => {
+    console.log('🔌 Socket connected');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Socket disconnected');
+  });
+
+  socket.on('error', (error) => {
+    console.error('🔌 Socket error:', error);
+  });
+
+  socket.on('reconnect', (attempt) => {
+    console.log(`🔌 Socket reconnected after ${attempt} attempts`);
+  });
+
+  socket.on('reconnect_error', (error) => {
+    console.error('🔌 Socket reconnection error:', error);
+  });
 }
 
-const WSContext = createContext<WSService | undefined>(undefined);
-
-export const WSProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [socketAccessToken, setSocketAccessToken] = useState<string | null>(
-    null
-  );
-  const socket = useRef<Socket | null>(null);
-
-  const createSocketConnection = (token: string) => {
-    if (socket.current) {
-      socket.current.disconnect();
-    }
-
-    socket.current = io(SOCKET_URL, {
-      transports: ["websocket"],
-      withCredentials: true,
-      extraHeaders: {
-        access_token: token || "",
-      },
-    });
-
-    socket.current.on("connect_error", (error: any) => {
-      if (error.message === "Authentication error") {
-        console.error(
-          "Socket connection error: Authentication failed. Please check your access token."
-        );
-        refresh_tokens();
-      }
-    });
-  };
-
-  const initializeSocket = () => {
-    const token = tokenStorage.getString("access_token");
-    if (token) {
-      setSocketAccessToken(token);
-      createSocketConnection(token);
-    }
-  };
-
-  useEffect(() => {
-    const token = tokenStorage.getString("access_token");
-    if (token) {
-      setSocketAccessToken(token);
-      createSocketConnection(token);
-    }
-
-    return () => {
-      socket.current?.disconnect();
-      socket.current = null;
-    };
-  }, []);
-
-  const emit = (event: string, data: any = {}) => {
-    socket.current?.emit(event, data);
-  };
-
-  const on = (event: string, callback: (data: any) => void) => {
-    socket.current?.on(event, callback);
-  };
-
-  const off = (event: string, callback: (data: any) => void) => {
-    socket.current?.off(event, callback);
-  };
-
-  const removeListeners = (event: string) => {
-    socket.current?.removeAllListeners(event);
-  };
-
-  const disconnect = () => {
-    if (socket.current) {
-      socket.current.disconnect();
-      socket.current = null;
-    }
-  };
-
-  const updateAccessToken = () => {
-    const newToken = tokenStorage.getString("access_token");
-    if (newToken) {
-      setSocketAccessToken(newToken);
-      createSocketConnection(newToken);
-    }
-  };
-
-  const socketService: WSService = {
-    initializeSocket,
-    emit,
-    on,
-    off,
-    removeListeners,
-    updateAccessToken,
-    disconnect,
-  };
-
-  return (
-    <WSContext.Provider value={socketService}>{children}</WSContext.Provider>
-  );
-};
-
-export const useWS = (): WSService => {
-  const socketService = useContext(WSContext);
-  if (!socketService) {
-    throw new Error("useWS must be used within a WSProvider");
+// Export a function to initialize socket auth
+export const initializeSocketAuth = (accessToken: string) => {
+  socket.auth = { access_token: accessToken };
+  if (!socket.connected) {
+    socket.connect();
   }
-  return socketService;
 };
+
+// Export a function to disconnect socket
+export const disconnectSocket = () => {
+  if (socket.connected) {
+    socket.disconnect();
+  }
+};
+
+export default socket;

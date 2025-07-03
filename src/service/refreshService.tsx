@@ -1,13 +1,19 @@
+import axios from "axios";
 import { tokenStorage } from "@/store/storage";
-import { appAxios } from "./apiInterceptors";
 import { logout } from "./authService";
+import { BASE_URL } from "./config";
+
+// Create a separate axios instance for token refresh
+const refreshAxios = axios.create({
+  baseURL: BASE_URL,
+});
 
 export const refresh_tokens = async () => {
   try {
     const refreshToken = tokenStorage.getString("refresh_token");
     if (!refreshToken) throw new Error("No refresh token");
 
-    const response = await appAxios.post(`/auth/refresh-token`, {
+    const response = await refreshAxios.post(`/auth/refresh-token`, {
       refresh_token: refreshToken,
     });
     const data = response.data as { access_token: string; refresh_token: string };

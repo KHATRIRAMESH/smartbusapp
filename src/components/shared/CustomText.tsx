@@ -1,7 +1,8 @@
+import React from 'react';
+import { Text, TextProps } from 'react-native';
 import { Colors } from "@/utils/Constants";
 import { CustomTextProps } from "@/utils/types";
-import { FC } from "react";
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
 
 const fontSizes = {
@@ -15,25 +16,24 @@ const fontSizes = {
   h8: 10,
 };
 
-const CustomText: FC<CustomTextProps> = ({
-  variant = "h6",
+const CustomText: React.FC<CustomTextProps & TextProps> = ({ 
+  variant = 'h5',
+  fontFamily = 'Regular',
   style,
-  fontSize,
   children,
-  fontFamily = "Regular",
-  numberOfLines,
+  ...props 
 }) => {
   return (
     <Text
       style={[
         styles.text,
         {
-          fontSize: RFValue(fontSize ? fontSize : fontSizes[variant]),
+          fontSize: RFValue(fontSizes[variant]),
           fontFamily: `NotoSans-${fontFamily}`,
         },
         style,
       ]}
-      numberOfLines={numberOfLines ? numberOfLines : undefined}
+      {...props}
     >
       {children}
     </Text>

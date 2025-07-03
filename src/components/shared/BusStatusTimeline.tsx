@@ -1,62 +1,98 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { BusTracking } from "@/utils/types";
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { CustomText } from './CustomText';
+import { useParentTracking } from '../../hooks/parent/useParentTracking';
 
 interface BusStatusTimelineProps {
-  busTracking: BusTracking[];
+  busId: string;
 }
 
-const getStatusText = (status: string) => {
-  switch (status) {
-    case "in_transit":
-      return "In Bus";
-    case "at_school":
-      return "At School";
-    case "at_pickup":
-      return "At Pickup";
-    case "at_drop":
-      return "At Drop";
-    default:
-      return "Unknown";
+const BusStatusTimeline: React.FC<BusStatusTimelineProps> = ({ busId }) => {
+  const { busLocations } = useParentTracking();
+  const busLocation = busLocations[busId];
+
+  if (!busLocation) {
+    return (
+      <View style={styles.container}>
+        <CustomText style={styles.noData}>No bus data available</CustomText>
+      </View>
+    );
   }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'in_service':
+        return '#4CAF50';
+      case 'at_stop':
+        return '#2196F3';
+      case 'offline':
+        return '#9E9E9E';
+      default:
+        return '#9E9E9E';
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.timeline}>
+        <View
+          style={[
+            styles.statusDot,
+            { backgroundColor: getStatusColor(busLocation.status) },
+          ]}
+        />
+        <View style={styles.statusLine} />
+      </View>
+      <View style={styles.content}>
+        <CustomText style={styles.status}>
+          {busLocation.status.replace('_', ' ').toUpperCase()}
+        </CustomText>
+        <CustomText style={styles.lastUpdate}>
+          Last updated: {new Date(busLocation.timestamp).toLocaleTimeString()}
+        </CustomText>
+      </View>
+    </View>
+  );
 };
 
-const BusStatusTimeline: React.FC<BusStatusTimelineProps> = ({ busTracking }) => (
-  <View style={styles.timeline}>
-    {busTracking.map((tracking) => (
-      <View key={tracking.bus.id} style={styles.timelineItem}>
-        <Text style={styles.timelineTime}>{tracking.currentLocation.estimatedArrival}</Text>
-        <Text style={styles.timelineIcon}>🚌</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.timelineLabel}>
-            Bus {tracking.bus.busNumber} - {getStatusText(tracking.currentLocation.status)}
-          </Text>
-          <Text style={styles.timelineAddress}>
-            {tracking.children.length} children on board • {tracking.currentLocation.speed}
-          </Text>
-          {tracking.driver && (
-            <Text style={styles.driverInfo}>
-              Driver: {tracking.driver.name} • {tracking.driver.phone}
-            </Text>
-          )}
-        </View>
-      </View>
-    ))}
-  </View>
-);
-
 const styles = StyleSheet.create({
-  timeline: { paddingHorizontal: 16, marginBottom: 32 },
-  timelineItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 18,
+  container: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 8,
   },
-  timelineTime: { width: 48, fontSize: 13, color: "#888", marginTop: 2 },
-  timelineIcon: { fontSize: 20, marginRight: 8 },
-  timelineLabel: { fontSize: 15, fontWeight: "bold" },
-  timelineAddress: { fontSize: 13, color: "#888" },
-  driverInfo: { fontSize: 12, color: "#666", marginTop: 2 },
+  timeline: {
+    width: 20,
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statusLine: {
+    width: 2,
+    height: 24,
+    backgroundColor: '#E0E0E0',
+    marginTop: 4,
+  },
+  content: {
+    flex: 1,
+  },
+  status: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  lastUpdate: {
+    fontSize: 12,
+    color: '#666',
+  },
+  noData: {
+    color: '#666',
+    fontStyle: 'italic',
+  },
 });
 
-export default React.memo(BusStatusTimeline); 
+export default BusStatusTimeline; 

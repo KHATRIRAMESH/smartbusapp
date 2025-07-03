@@ -5,22 +5,23 @@ import { tokenStorage } from "@/store/storage";
 import { useDriverStore } from "@/store/driverStore";
 import { commonStyles } from "@/styles/commonStyles";
 import { splashStyles } from "@/styles/splashStyles";
-import { resetAndNavigate } from "@/utils/Helpers";
+import { router } from "expo-router";
 import { useFonts } from "expo-font";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { Alert, Image, View } from "react-native";
+
 interface DecodedToken {
   exp: number;
 }
 
 const Main = () => {
-  const [loaded] = useFonts({
-    Bold: require("../assets/fonts/NotoSans-Bold.ttf"),
-    Regular: require("../assets/fonts/NotoSans-Regular.ttf"),
-    Medium: require("../assets/fonts/NotoSans-Medium.ttf"),
-    Light: require("../assets/fonts/NotoSans-Light.ttf"),
-    SemiBold: require("../assets/fonts/NotoSans-SemiBold.ttf"),
+  const [fontsLoaded] = useFonts({
+    'NotoSans-Bold': require("../assets/fonts/NotoSans-Bold.ttf"),
+    'NotoSans-Regular': require("../assets/fonts/NotoSans-Regular.ttf"),
+    'NotoSans-Medium': require("../assets/fonts/NotoSans-Medium.ttf"),
+    'NotoSans-Light': require("../assets/fonts/NotoSans-Light.ttf"),
+    'NotoSans-SemiBold': require("../assets/fonts/NotoSans-SemiBold.ttf"),
   });
 
   const { user } = useDriverStore();
@@ -48,24 +49,28 @@ const Main = () => {
         }
       }
       if (user) {
-        resetAndNavigate("/driver/home");
+        router.replace("/(driver)/home" as any);
       } else {
-        resetAndNavigate("/role");
+        router.replace("/role" as any);
       }
       return;
     }
-    resetAndNavigate("/role");
+    router.replace("/role" as any);
   };
 
   useEffect(() => {
-    if (loaded && !hasNavigated) {
+    if (fontsLoaded && !hasNavigated) {
       const timeoutId = setTimeout(() => {
         tokenCheck();
         setHasNavigated(true);
       }, 2000);
       return () => clearTimeout(timeoutId);
     }
-  }, [loaded, hasNavigated]);
+  }, [fontsLoaded, hasNavigated]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <View style={commonStyles.container}>

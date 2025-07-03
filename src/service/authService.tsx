@@ -1,10 +1,15 @@
+import axios from 'axios';
 import { useDriverStore } from "@/store/driverStore";
 import { tokenStorage } from "@/store/storage";
 import { resetAndNavigate } from "@/utils/Helpers";
-import { appAxios } from "./apiInterceptors";
 import { Alert } from "react-native";
 import { BASE_URL } from "./config";
 import { useAuthStore } from "@/store/authStore";
+
+// Create a separate axios instance for auth
+const authAxios = axios.create({
+  baseURL: BASE_URL,
+});
 
 export const signin = async (
   payload: {
@@ -16,7 +21,7 @@ export const signin = async (
   const { setUser: setDriverUser } = useDriverStore.getState();
 
   try {
-    const res = await appAxios.post(`/auth/signin`, payload);
+    const res = await authAxios.post(`/auth/signin`, payload);
     console.log("res", res);
     const data = res.data as { user: any; access_token: string; refresh_token: string };
 
@@ -26,7 +31,7 @@ export const signin = async (
     tokenStorage.set("access_token", data.access_token);
     tokenStorage.set("refresh_token", data.refresh_token);
 
-    resetAndNavigate("/driver/home");
+    resetAndNavigate("/screens/driver/HomeScreen");
     updateAccessToken();
   } catch (error: any) {
     Alert.alert(
@@ -46,13 +51,13 @@ export const parentSignin = async (
 ) => {
   const { setUser } = useAuthStore.getState();
   try {
-    const res = await appAxios.post(`/parent/login`, payload);
+    const res = await authAxios.post(`/parent/login`, payload);
     const data = res.data as { access_token: string; refresh_token: string; user: any };
     tokenStorage.set("user_role", "parent");
     tokenStorage.set("access_token", data.access_token);
     tokenStorage.set("refresh_token", data.refresh_token);
     tokenStorage.set("user", JSON.stringify(data.user));
-    setUser(data.user, "parent");
+    setUser(data.user);
     resetAndNavigate("/parent/home");
     updateAccessToken();
   } catch (error: any) {
@@ -64,10 +69,9 @@ export const parentSignin = async (
   }
 };
 
-export const logout = async (disconnect?: () => void) => {
+export const logout = () => {
   const { clearDriverData } = useDriverStore.getState();
-  const { clearAuth } = useAuthStore.getState();
-  tokenStorage.clearAll();
+  const { logout: clearAuth } = useAuthStore.getState();
   clearDriverData();
   clearAuth();
   resetAndNavigate("/role");

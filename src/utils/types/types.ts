@@ -1,3 +1,5 @@
+import { RelativePathString } from "expo-router/build/types";
+
 export interface CustomButtonProps {
   title: string;
   loading?: boolean;
@@ -21,6 +23,14 @@ export interface CustomTextProps {
   numberOfLines?: number;
 }
 
+export type AppRoute = RelativePathString
+  | "/"
+  | "/role"
+  | "/driver/home"
+  | "/driver/auth"
+  | "/parent/home"
+  | "/parent/auth"
+  | "/parent/track";
 
 // Child type
 export interface Child {

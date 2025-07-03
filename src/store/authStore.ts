@@ -1,54 +1,77 @@
 import { create } from 'zustand';
 import { tokenStorage } from './storage';
+import { disconnectSocket } from '../service/WSProvider';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  isActive: boolean;
-  schoolAdminId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  // Add more fields as needed
-}
-
-interface AuthState {
-  user: User | null;
+export interface AuthState {
+  accessToken: string | null;
+  refreshToken: string | null;
+  user: {
+    id: string;
+    role: string;
+  } | null;
   role: string | null;
-  isAuthenticated: boolean;
-  setUser: (user: User, role: string) => void;
-  clearAuth: () => void;
-  loadFromStorage: () => void;
+  setTokens: (access: string | null, refresh: string | null) => Promise<void>;
+  setUser: (user: { id: string; role: string } | null) => Promise<void>;
+  loadFromStorage: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
+  accessToken: null,
+  refreshToken: null,
   user: null,
   role: null,
-  isAuthenticated: false,
-  setUser: (user, role) => {
-    set({ user, role, isAuthenticated: true });
-    tokenStorage.set('user', JSON.stringify(user));
-    tokenStorage.set('user_role', role);
+
+  loadFromStorage: async () => {
+    const [accessToken, refreshToken, userStr, role] = await Promise.all([
+      tokenStorage.get('accessToken'),
+      tokenStorage.get('refreshToken'),
+      tokenStorage.get('user'),
+      tokenStorage.get('role')
+    ]);
+
+    const user = userStr ? JSON.parse(userStr) : null;
+    set({ user, role, accessToken, refreshToken });
   },
-  clearAuth: () => {
-    set({ user: null, role: null, isAuthenticated: false });
-    tokenStorage.delete('user');
-    tokenStorage.delete('user_role');
-    tokenStorage.delete('access_token');
-    tokenStorage.delete('refresh_token');
-  },
-  loadFromStorage: () => {
-    const userStr = tokenStorage.getString('user');
-    const role = tokenStorage.getString('user_role');
-    if (userStr && role) {
-      try {
-        const user = JSON.parse(userStr);
-        set({ user, role, isAuthenticated: true });
-      } catch {
-        set({ user: null, role: null, isAuthenticated: false });
-      }
+
+  setTokens: async (access, refresh) => {
+    if (access) {
+      await tokenStorage.set('accessToken', access);
+    } else {
+      await tokenStorage.delete('accessToken');
     }
+    if (refresh) {
+      await tokenStorage.set('refreshToken', refresh);
+    } else {
+      await tokenStorage.delete('refreshToken');
+    }
+    set({ accessToken: access, refreshToken: refresh });
+  },
+
+  setUser: async (user) => {
+    if (user) {
+      await tokenStorage.set('user', JSON.stringify(user));
+      await tokenStorage.set('role', user.role);
+    } else {
+      await tokenStorage.delete('user');
+      await tokenStorage.delete('role');
+    }
+    set({ user, role: user?.role || null });
+  },
+
+  logout: async () => {
+    // Clear socket connection
+    disconnectSocket();
+
+    // Clear storage
+    await tokenStorage.clearAll();
+
+    // Clear state
+    set({
+      accessToken: null,
+      refreshToken: null,
+      user: null,
+      role: null,
+    });
   },
 })); 

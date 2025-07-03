@@ -5,6 +5,7 @@ import { useRouter, useSegments } from "expo-router";
 import { jwtDecode } from "jwt-decode";
 import { useAuthStore } from "@/store/authStore";
 import { ActivityIndicator, View } from "react-native";
+import { initializeSocketAuth } from "@/service/WSProvider";
 
 interface JWT {
   exp: number;
@@ -17,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
-  const { setUser, loadFromStorage, user, role } = useAuthStore();
+  const { setUser, loadFromStorage } = useAuthStore();
 
   useEffect(() => {
     const checkSession = async () => {
@@ -34,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           userRole = decoded.role;
           if (decoded.exp * 1000 > Date.now()) {
             isAuthenticated = true;
+            // Initialize socket connection with the access token
+            initializeSocketAuth(accessToken);
           }
         } catch (e) {
           // Invalid token, try refresh
@@ -47,6 +50,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             userRole = decoded.role;
             if (decoded.exp * 1000 > Date.now()) {
               isAuthenticated = true;
+              // Initialize socket connection with the new access token
+              initializeSocketAuth(newAccessToken);
             }
           } catch (e) {}
         }
@@ -65,8 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         (seg1 === "parent" && seg2 === "auth") ||
         (seg1 === "driver" && seg2 === "auth")
       ) {
-        if (userRole === "parent") router.replace("/parent/home");
-        else if (userRole === "driver") router.replace("/driver/home");
+        if (userRole === "parent") router.replace("/parent/home" as any);
+        else if (userRole === "driver") router.replace("/screens/driver/HomeScreen" as any);
       }
       setLoading(false);
     };

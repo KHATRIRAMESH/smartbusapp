@@ -1,96 +1,168 @@
-import { useWS } from "@/service/WSProvider";
-import { reverseGeocode } from "@/utils/mapUtils";
-import * as Location from "expo-location";
-import * as geolib from "geolib";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from 'react';
+import * as Location from 'expo-location';
+import { useDriverStore } from '../store/driverStore';
+import { useAuthStore } from '../store/authStore';
+import { socket } from '../service/WSProvider';
+import { updateBusLocation } from '../service/driver';
 
-export const useDriverLocation = () => {
-  const { emit } = useWS();
-  const watchId = useRef<Location.LocationSubscription | null>(null);
-
-  const [coords, setCoords] = useState<{
+interface LocationState {
+  coords: {
     latitude: number;
     longitude: number;
-  } | null>(null);
+    speed: number | null;
+    heading: number | null;
+  };
+  timestamp: number;
+}
 
-  const [address, setAddress] = useState<string>("");
+interface UseDriverLocationReturn {
+  location: LocationState | null;
+  error: string | null;
+  isTracking: boolean;
+  startTracking: () => Promise<void>;
+  stopTracking: () => void;
+  updateBusStatus: (status: string) => void;
+}
 
-  const lastGeocodedCoords = useRef<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-  const lastSentCoords = useRef<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-  const GEO_THRESHOLD_METERS = 50; // minimum distance to trigger location update
+export const useDriverLocation = (): UseDriverLocationReturn => {
+  const [location, setLocation] = useState<LocationState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isTracking, setIsTracking] = useState(false);
+  const locationSubscription = useRef<any>(null);
+  const { busId, status: busStatus, setBusStatus } = useDriverStore();
+  const { accessToken } = useAuthStore();
+
+  // Cleanup function
+  const cleanup = () => {
+    if (locationSubscription.current) {
+      locationSubscription.current.remove();
+      locationSubscription.current = null;
+    }
+    setIsTracking(false);
+    socket.emit('updateBusStatus', { status: 'offline' });
+  };
 
   useEffect(() => {
-    const startSharingLocation = async () => {
+    // Cleanup on unmount
+    return () => cleanup();
+  }, []);
+
+  const startTracking = async () => {
+    try {
+      // Request permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.warn("Location permission not granted");
+      if (status !== 'granted') {
+        setError('Permission to access location was denied');
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-
-      emit("goOnDuty", { latitude, longitude });
-
-      setCoords({ latitude, longitude });
-      lastGeocodedCoords.current = { latitude, longitude };
-      lastSentCoords.current = { latitude, longitude };
-      emit("updateLocation", { latitude, longitude });
-
-      const address = await reverseGeocode(latitude, longitude);
-      setAddress(address);
-
-      watchId.current = await Location.watchPositionAsync(
+      // Enable high accuracy and real-time updates
+      await Location.enableNetworkProviderAsync();
+      
+      // Start location updates
+      locationSubscription.current = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
-          timeInterval: 30000, // fallback
-          distanceInterval: 1, // 1 meter
+          timeInterval: 5000, // Update every 5 seconds
+          distanceInterval: 10, // or if moved 10 meters
         },
-        async (loc) => {
-          const { latitude, longitude } = loc.coords;
+        async (newLocation) => {
+          setLocation(newLocation);
+          setError(null);
 
-          setCoords({ latitude, longitude });
+          // Send location update via WebSocket
+          socket.emit('updateBusLocation', {
+            coords: {
+              latitude: newLocation.coords.latitude,
+              longitude: newLocation.coords.longitude,
+              speed: newLocation.coords.speed,
+              heading: newLocation.coords.heading,
+            },
+            status: busStatus,
+          });
 
-          // Only emit if moved more than threshold
-          const last = lastSentCoords.current;
-          const movedFar = last
-            ? geolib.getDistance(last, { latitude, longitude }) >= GEO_THRESHOLD_METERS
-            : true;
-
-          if (movedFar) {
-            emit("updateLocation", { latitude, longitude });
-            lastSentCoords.current = { latitude, longitude };
-          }
-
-          // Reverse geocode if moved far from last geocoded point
-          const lastGeo = lastGeocodedCoords.current;
-          const movedFarForGeo = lastGeo
-            ? geolib.getDistance(lastGeo, { latitude, longitude }) > 5
-            : true;
-
-          if (movedFarForGeo) {
-            lastGeocodedCoords.current = { latitude, longitude };
-            const address = await reverseGeocode(latitude, longitude);
-            setAddress(address);
+          // Also update via REST API for persistence
+          try {
+            await updateBusLocation(busId, {
+              latitude: newLocation.coords.latitude,
+              longitude: newLocation.coords.longitude,
+              speed: newLocation.coords.speed,
+              heading: newLocation.coords.heading,
+              status: busStatus,
+            });
+          } catch (err) {
+            console.error('Failed to update location via API:', err);
           }
         }
       );
+
+      // Notify server that bus service is starting
+      socket.emit('startBusService', {
+        coords: location?.coords,
+        status: busStatus || 'in_service',
+      });
+
+      setIsTracking(true);
+    } catch (err: any) {
+      setError(err.message);
+      cleanup();
+    }
+  };
+
+  const stopTracking = () => {
+    cleanup();
+  };
+
+  const updateBusStatus = (status: string) => {
+    setBusStatus(status);
+    if (socket.connected) {
+      socket.emit('updateBusStatus', { status });
+    }
+  };
+
+  // Handle socket connection/disconnection
+  useEffect(() => {
+    if (!socket.connected && accessToken) {
+      socket.auth = { access_token: accessToken };
+      socket.connect();
+    }
+
+    const handleConnect = () => {
+      console.log('Socket connected');
+      if (isTracking) {
+        socket.emit('startBusService', {
+          coords: location?.coords,
+          status: busStatus || 'in_service',
+        });
+      }
     };
 
-    startSharingLocation();
+    const handleDisconnect = () => {
+      console.log('Socket disconnected');
+    };
+
+    const handleError = (err: Error) => {
+      console.error('Socket error:', err);
+      setError('Connection error: ' + err.message);
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('error', handleError);
 
     return () => {
-      watchId.current?.remove();
-      emit("goOffDuty", {});
-      console.log("🚫 Stopped location tracking");
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('error', handleError);
     };
-  }, []);
+  }, [accessToken, isTracking, location, busStatus]);
 
-  return { coords, address };
+  return {
+    location,
+    error,
+    isTracking,
+    startTracking,
+    stopTracking,
+    updateBusStatus,
+  };
 };
