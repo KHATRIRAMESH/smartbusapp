@@ -1,234 +1,206 @@
 # SmartBus Mobile App
 
-Independent React Native mobile application for the SmartBus school bus management system.
+A React Native mobile application for real-time school bus tracking, built with Expo.
 
-## 🚀 Quick Start
+## Features
 
-### Prerequisites
-- Node.js 18+
-- Expo CLI
-- Android Studio (for Android development)
-- Xcode (for iOS development, macOS only)
-- API server running and accessible
+- Real-time bus location tracking
+- Parent dashboard for child tracking
+- Driver interface for route navigation
+- Push notifications for bus updates
+- Offline support
+- Multi-language support
+- Dark mode support
 
-### Installation
-```bash
-npm install
-```
+## Tech Stack
 
-### Development
-```bash
-npm start
-```
+- React Native with Expo
+- TypeScript
+- React Navigation
+- Zustand for state management
+- Socket.IO for real-time communication
+- React Native Maps
+- Expo Location
+- Expo Notifications
+- React Native Paper for UI components
+- i18next for internationalization
 
-### Platform Specific
-```bash
-# Android
-npm run android
-
-# iOS
-npm run ios
-
-# Web
-npm run web
-```
-
-## 📋 Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# API Server Configuration
-EXPO_PUBLIC_API_URL=https://your-api-server.com
-EXPO_PUBLIC_SOCKET_URL=wss://your-api-server.com
-
-# Google Maps API
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-
-# App Configuration
-EXPO_PUBLIC_APP_NAME=SmartBus
-EXPO_PUBLIC_APP_VERSION=1.0.0
-
-# Environment
-NODE_ENV=production
-```
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 SmartbusApp/
 ├── src/
-│   ├── app/                 # Expo Router screens
-│   │   ├── driver/         # Driver screens
-│   │   ├── user/           # User screens
-│   │   └── _layout.tsx     # Root layout
-│   ├── components/         # Reusable components
-│   │   ├── driver/         # Driver-specific components
-│   │   ├── user/           # User-specific components
-│   │   └── shared/         # Shared components
-│   ├── service/            # API services
-│   ├── store/              # State management (Zustand)
-│   ├── styles/             # Style definitions
-│   ├── utils/              # Utility functions
-│   └── hooks/              # Custom hooks
-├── assets/                 # Static assets
-│   ├── fonts/             # Custom fonts
-│   ├── icons/             # App icons
-│   └── images/            # Images
-└── app.config.js          # Expo configuration
+│   ├── app/              # App screens and navigation
+│   ├── components/       # Reusable UI components
+│   ├── hooks/           # Custom React hooks
+│   ├── service/         # API and socket services
+│   ├── store/           # Global state management
+│   ├── styles/          # Global styles and themes
+│   ├── utils/           # Utility functions
+│   └── assets/          # Images, fonts, etc.
+├── android/             # Android specific files
+└── ios/                 # iOS specific files
 ```
 
-## 📱 Features
+## Getting Started
 
-### User App
-- Real-time bus tracking
-- Child management
-- Ride history
-- Notifications
-- Location services
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy `.env.example` to `.env` and update the values:
+   ```bash
+   cp env.example .env
+   ```
+4. Start the development server:
+   ```bash
+   npm start
+   ```
+5. Run on iOS:
+   ```bash
+   npm run ios
+   ```
+6. Run on Android:
+   ```bash
+   npm run android
+   ```
 
-### Driver App
-- Route navigation
-- Student pickup/dropoff
-- Real-time location sharing
-- Ride management
-- Emergency contacts
+## Environment Variables
 
-## 🔧 Development
+```env
+# API Configuration
+API_URL=https://api.smartbus.com
+SOCKET_URL=wss://api.smartbus.com
 
-### Code Quality
-```bash
-npm run lint
-npm run lint:fix
+# Maps Configuration
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+
+# Push Notifications
+EXPO_PROJECT_ID=your_expo_project_id
+EXPO_CLIENT_ID=your_expo_client_id
+
+# App Configuration
+APP_ENV=development
+ENABLE_ANALYTICS=false
 ```
 
-### Type Checking
-```bash
-npm run type-check
-```
+## Available Scripts
 
-### Testing
-```bash
-npm test
-```
+- `npm start` - Start the Expo development server
+- `npm run ios` - Run on iOS simulator
+- `npm run android` - Run on Android emulator
+- `npm run web` - Run in web browser
+- `npm run test` - Run tests
+- `npm run lint` - Run ESLint
+- `npm run build:android` - Build Android APK
+- `npm run build:ios` - Build iOS IPA
 
-## 📦 Build & Deployment
+## Features in Detail
 
-### EAS Build (Recommended)
-```bash
-# Install EAS CLI
-npm install -g @expo/eas-cli
+### Parent Features
+- Real-time bus location tracking
+- Child attendance notifications
+- Route and stop information
+- Driver contact details
+- Historical trip data
+- Multiple children support
 
-# Login to Expo
-eas login
+### Driver Features
+- Real-time navigation
+- Student attendance management
+- Route optimization
+- Status updates
+- Emergency alerts
+- Offline support
 
-# Configure EAS
-eas build:configure
+### Common Features
+- User profile management
+- Push notifications
+- Dark mode
+- Multi-language support
+- Offline data sync
+- Auto-updates
 
-# Build for platforms
-npm run build:android
-npm run build:ios
-npm run build:all
-```
+## Folder Structure Details
 
-### App Store Submission
-```bash
-# Android (Google Play Store)
-npm run submit:android
+### `/src/app`
+- Screen components
+- Navigation configuration
+- Route definitions
 
-# iOS (App Store)
-npm run submit:ios
-```
+### `/src/components`
+- Reusable UI components
+- Screen-specific components
+- Layout components
 
-### Manual Build
-```bash
-# Android APK
-expo build:android
+### `/src/hooks`
+- Location tracking hooks
+- Authentication hooks
+- Data fetching hooks
+- UI utility hooks
 
-# iOS IPA
-expo build:ios
-```
+### `/src/service`
+- API service
+- Socket service
+- Location service
+- Notification service
 
-## 🎨 UI/UX
+### `/src/store`
+- Global state management
+- User store
+- Location store
+- Settings store
 
-Built with:
-- **React Native** - Cross-platform mobile development
-- **Expo Router** - File-based routing
-- **React Native Maps** - Map integration
-- **Socket.IO** - Real-time communication
-- **Zustand** - State management
+### `/src/utils`
+- Helper functions
+- Constants
+- Type definitions
+- Validation functions
 
-## 🔗 API Integration
-
-The mobile app communicates with the SmartBus API server:
-
-- **Authentication**: JWT-based auth with refresh tokens
-- **Real-time**: WebSocket connections for live updates
-- **REST API**: CRUD operations for data management
-- **Push Notifications**: Expo notifications for alerts
-
-## 📊 Performance
-
-- **Expo SDK 52** with latest features
-- **React Native 0.76** with performance optimizations
-- **TypeScript** for type safety
-- **Optimized images** and assets
-- **Lazy loading** for better performance
-
-## 🔒 Security
-
-- Environment-based configuration
-- Secure token storage
-- API key protection
-- Input validation
-- HTTPS only in production
-
-## 📱 Platform Support
-
-- **Android**: API level 21+ (Android 5.0+)
-- **iOS**: iOS 13.0+
-- **Web**: Modern browsers (Chrome, Firefox, Safari, Edge)
-
-## 🧪 Testing
-
-```bash
-# Unit tests
-npm test
-
-# E2E tests (recommended: Detox)
-npm install --save-dev detox
-```
-
-## 📊 Analytics
-
-Recommended integrations:
-- **Expo Analytics** - Built-in analytics
-- **Firebase Analytics** - Google Analytics
-- **Sentry** - Error tracking
-- **Mixpanel** - User behavior
-
-## 🚀 Publishing
-
-### Google Play Store
-1. Build APK/AAB: `npm run build:android`
-2. Submit to Play Console: `npm run submit:android`
-3. Configure store listing
-4. Release to production
-
-### Apple App Store
-1. Build IPA: `npm run build:ios`
-2. Submit to App Store Connect: `npm run submit:ios`
-3. Configure app metadata
-4. Submit for review
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create feature branch
-3. Make changes
-4. Run tests and linting
-5. Submit pull request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-## 📄 License
+## Testing
 
-MIT License
+Run the test suite:
+
+```bash
+npm test
+```
+
+Run tests with coverage:
+
+```bash
+npm run test:coverage
+```
+
+## Building for Production
+
+### Android
+
+1. Update `app.json` with your configuration
+2. Generate a keystore file
+3. Configure gradle with your keystore
+4. Build the app:
+   ```bash
+   npm run build:android
+   ```
+
+### iOS
+
+1. Update `app.json` with your configuration
+2. Configure certificates in Apple Developer Portal
+3. Build the app:
+   ```bash
+   npm run build:ios
+   ```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -1,6 +1,6 @@
 // Export parent service modules here as you modularize API logic
 
-import { appAxios } from '../apiInterceptors';
+import { api } from '../apiInterceptors';
 
 export interface Child {
   id: string;
@@ -27,6 +27,6 @@ interface ApiResponse<T> {
 }
 
 export const getParentProfile = async (): Promise<ParentProfile> => {
-  const res = await appAxios.get<ApiResponse<ParentProfile>>('/parent/profile');
+  const res = await api.get<ApiResponse<ParentProfile>>('/parent/profile');
   return res.data.data;
 };

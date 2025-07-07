@@ -4,6 +4,7 @@ import { StatusBar } from "react-native";
 import { AuthProvider } from "@/components/AuthProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Slot } from "expo-router";
 
 const queryClient = new QueryClient();
 
@@ -17,12 +18,7 @@ const RootLayout = () => {
             backgroundColor="orange"
             translucent={false}
           />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "slide_from_right",
-            }}
-          />
+          <Slot />
         </AuthProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

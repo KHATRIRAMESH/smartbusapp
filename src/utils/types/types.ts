@@ -26,13 +26,34 @@ export interface CustomTextProps {
 export type AppRoute = RelativePathString
   | "/"
   | "/role"
-  | "/driver/home"
-  | "/driver/auth"
-  | "/parent/home"
-  | "/parent/auth"
-  | "/parent/track";
+  | "/(driver)/home"
+  | "/(driver)/auth"
+  | "/(parent)/home"
+  | "/(parent)/auth";
 
 // Child type
+export interface Bus {
+  id: string;
+  busNumber: string;
+  plateNumber: string;
+  capacity: number;
+  model: string;
+  driver: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+  };
+}
+
+export interface Route {
+  id: string;
+  name: string;
+  startStop: string;
+  endStop: string;
+  stops: string[];
+}
+
 export interface Child {
   id: string;
   name: string;
@@ -42,28 +63,9 @@ export interface Child {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  bus: {
-    id: string;
-    busNumber: string;
-    plateNumber: string;
-    capacity: number;
-    model: string;
-    driver: {
-      id: string;
-      name: string;
-      phone: string;
-      licenseNumber: string;
-    } | null;
-  } | null;
-  route: {
-    id: string;
-    name: string;
-    startStop: string;
-    endStop: string;
-    stops: string[];
-  } | null;
+  bus: Bus | null;
+  route: Route | null;
 }
-
 
 // Parent profile type
 export interface ParentProfile {
@@ -116,4 +118,28 @@ export interface BusTracking {
     estimatedArrival: string;
     speed: string;
   };
+}
+
+// Driver types
+export interface Driver {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  licenseNumber: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  bus?: Bus;
+}
+
+export interface DriverLoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: Driver;
+}
+
+export interface DriverLoginPayload {
+  email: string;
+  password: string;
 }

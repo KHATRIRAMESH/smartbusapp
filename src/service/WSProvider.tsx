@@ -35,7 +35,7 @@ if (__DEV__) {
 
 // Export a function to initialize socket auth
 export const initializeSocketAuth = (accessToken: string) => {
-  socket.auth = { access_token: accessToken };
+  socket.auth = { token: accessToken };
   if (!socket.connected) {
     socket.connect();
   }

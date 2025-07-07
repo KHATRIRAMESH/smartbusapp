@@ -21,7 +21,7 @@ interface UseDriverLocationReturn {
   isTracking: boolean;
   startTracking: () => Promise<void>;
   stopTracking: () => void;
-  updateBusStatus: (status: string) => void;
+  updateBusStatus: (status: 'online' | 'offline' | 'on_trip') => void;
 }
 
 export const useDriverLocation = (): UseDriverLocationReturn => {
@@ -29,7 +29,7 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const locationSubscription = useRef<any>(null);
-  const { busId, status: busStatus, setBusStatus } = useDriverStore();
+  const { user, busId, status: busStatus = 'offline', setStatus } = useDriverStore();
   const { accessToken } = useAuthStore();
 
   // Cleanup function
@@ -39,7 +39,11 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
       locationSubscription.current = null;
     }
     setIsTracking(false);
-    socket.emit('updateBusStatus', { status: 'offline' });
+    // Set status to offline when stopping
+    setStatus('offline');
+    if (busId) {
+      socket.emit('updateBusStatus', { busId, status: 'offline' });
+    }
   };
 
   useEffect(() => {
@@ -49,12 +53,21 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
 
   const startTracking = async () => {
     try {
+      if (!busId) {
+        setError('No bus assigned to driver');
+        return;
+      }
+
       // Request permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setError('Permission to access location was denied');
         return;
       }
+
+      // Set status to online when starting tracking
+      setStatus('online');
+      const currentStatus = 'online';
 
       // Enable high accuracy and real-time updates
       await Location.enableNetworkProviderAsync();
@@ -64,21 +77,29 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
         {
           accuracy: Location.Accuracy.High,
           timeInterval: 5000, // Update every 5 seconds
-          distanceInterval: 10, // or if moved 10 meters
+          distanceInterval: 1, // or if moved 1 meter
         },
         async (newLocation) => {
           setLocation(newLocation);
           setError(null);
 
+          if (!busId) {
+            console.error('No bus ID available for location update');
+            return;
+          }
+
+          // Get current status from store
+          const { status: currentBusStatus } = useDriverStore.getState();
+          console.log('Sending location update with status:', currentBusStatus);
+
           // Send location update via WebSocket
           socket.emit('updateBusLocation', {
-            coords: {
-              latitude: newLocation.coords.latitude,
-              longitude: newLocation.coords.longitude,
-              speed: newLocation.coords.speed,
-              heading: newLocation.coords.heading,
-            },
-            status: busStatus,
+            busId,
+            latitude: newLocation.coords.latitude,
+            longitude: newLocation.coords.longitude,
+            speed: newLocation.coords.speed,
+            heading: newLocation.coords.heading,
+            status: currentBusStatus,
           });
 
           // Also update via REST API for persistence
@@ -88,7 +109,7 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
               longitude: newLocation.coords.longitude,
               speed: newLocation.coords.speed,
               heading: newLocation.coords.heading,
-              status: busStatus,
+              status: currentBusStatus,
             });
           } catch (err) {
             console.error('Failed to update location via API:', err);
@@ -98,11 +119,13 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
 
       // Notify server that bus service is starting
       socket.emit('startBusService', {
+        busId,
         coords: location?.coords,
-        status: busStatus || 'in_service',
+        status: currentStatus,
       });
 
       setIsTracking(true);
+      console.log('Started tracking with status:', currentStatus);
     } catch (err: any) {
       setError(err.message);
       cleanup();
@@ -110,29 +133,34 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
   };
 
   const stopTracking = () => {
+    console.log('Stopping tracking and setting status to offline');
     cleanup();
   };
 
-  const updateBusStatus = (status: string) => {
-    setBusStatus(status);
-    if (socket.connected) {
-      socket.emit('updateBusStatus', { status });
+  const updateBusStatus = (newStatus: 'online' | 'offline' | 'on_trip') => {
+    console.log('Updating bus status to:', newStatus);
+    setStatus(newStatus);
+    if (socket.connected && busId) {
+      socket.emit('updateBusStatus', { busId, status: newStatus });
     }
   };
 
   // Handle socket connection/disconnection
   useEffect(() => {
     if (!socket.connected && accessToken) {
-      socket.auth = { access_token: accessToken };
+      socket.auth = { token: accessToken };
       socket.connect();
     }
 
     const handleConnect = () => {
       console.log('Socket connected');
-      if (isTracking) {
+      if (isTracking && busId) {
+        const { status: currentBusStatus } = useDriverStore.getState();
+        console.log('Reconnected - sending current status:', currentBusStatus);
         socket.emit('startBusService', {
+          busId,
           coords: location?.coords,
-          status: busStatus || 'in_service',
+          status: currentBusStatus,
         });
       }
     };
@@ -155,7 +183,7 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
       socket.off('disconnect', handleDisconnect);
       socket.off('error', handleError);
     };
-  }, [accessToken, isTracking, location, busStatus]);
+  }, [accessToken, isTracking, location, busId]);
 
   return {
     location,

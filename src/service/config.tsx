@@ -6,7 +6,7 @@ const getServerUrl = () => {
   if (__DEV__) {
     // Use local IP for Android, localhost for iOS simulator
     return Platform.OS === "android" 
-      ? "http://192.168.18.16:8000" 
+      ? "http://192.168.1.67:8000" 
       : "http://localhost:8000";
   }
   

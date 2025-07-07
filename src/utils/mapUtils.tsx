@@ -64,14 +64,12 @@ export const getPlacesSuggestions = async (
   query: string,
   sessionToken?: string
 ) => {
-  const { location } = useDriverStore.getState();
   try {
     const response = await axios.get(
       "https://maps.googleapis.com/maps/api/place/autocomplete/json",
       {
         params: {
           input: query,
-          location: `${location?.latitude},${location?.longitude}`,
           radius: 50000,
           components: "country:NP",
           key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -240,4 +238,9 @@ export const vehicleIcons: Record<
   auto: { icon: require("@/assets/icons/auto.png") },
   cabEconomy: { icon: require("@/assets/icons/cab.png") },
   cabPremium: { icon: require("@/assets/icons/cab_premium.png") },
+};
+
+export const getCurrentDriverLocation = () => {
+  const { user } = useDriverStore.getState();
+  return user ? { latitude: 0, longitude: 0 } : null; // Return default or null if no user
 };

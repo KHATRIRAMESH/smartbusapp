@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Modal, StyleSheet, TouchableOpacity } from 'react-native';
-import { CustomText } from '../shared/CustomText';
-import { useAuthStore } from '../../store/authStore';
+import { View, Modal, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import CustomText from '../shared/CustomText';
+import { logout } from '@/service/authService';
+import ChangePasswordModal from './ChangePasswordModal';
+import { Colors } from '@/utils/Constants';
 
 interface SettingModalProps {
   visible: boolean;
@@ -14,13 +16,22 @@ interface SettingModalProps {
 }
 
 const SettingModal: React.FC<SettingModalProps> = ({ visible, onClose, parent }) => {
-  const logout = useAuthStore((state) => state.logout);
+  const [showChangePassword, setShowChangePassword] = React.useState(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  if (!parent) {
-    return null;
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
   }
+  };
 
   return (
+    <>
     <Modal
       visible={visible}
       transparent
@@ -36,6 +47,13 @@ const SettingModal: React.FC<SettingModalProps> = ({ visible, onClose, parent })
             </TouchableOpacity>
           </View>
 
+            {!parent ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <CustomText style={styles.loadingText}>Loading profile...</CustomText>
+              </View>
+            ) : (
+              <>
           <View style={styles.section}>
             <CustomText style={styles.sectionTitle}>Profile</CustomText>
             <View style={styles.profileInfo}>
@@ -52,12 +70,35 @@ const SettingModal: React.FC<SettingModalProps> = ({ visible, onClose, parent })
             </View>
           </View>
 
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                <TouchableOpacity 
+                  style={styles.changePasswordButton}
+                  onPress={() => setShowChangePassword(true)}
+                >
+                  <CustomText style={styles.changePasswordText}>Change Password</CustomText>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.logoutButton, isLoggingOut && styles.buttonDisabled]} 
+                  onPress={handleLogout}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
             <CustomText style={styles.logoutText}>Logout</CustomText>
+                  )}
           </TouchableOpacity>
+              </>
+            )}
         </View>
       </View>
     </Modal>
+
+      <ChangePasswordModal
+        visible={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
+    </>
   );
 };
 
@@ -109,6 +150,29 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: Colors.textLight,
+    fontSize: 16,
+  },
+  changePasswordButton: {
+    backgroundColor: Colors.primary,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  changePasswordText: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   logoutButton: {
     backgroundColor: '#dc3545',
     padding: 12,
@@ -119,6 +183,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 

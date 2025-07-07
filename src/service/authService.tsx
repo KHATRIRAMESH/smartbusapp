@@ -5,40 +5,45 @@ import { resetAndNavigate } from "@/utils/Helpers";
 import { Alert } from "react-native";
 import { BASE_URL } from "./config";
 import { useAuthStore } from "@/store/authStore";
+import { ParentProfile } from '@/utils/types/types';
 
 // Create a separate axios instance for auth
-const authAxios = axios.create({
+export const authAxios = axios.create({
   baseURL: BASE_URL,
 });
 
 export const signin = async (
   payload: {
     role: "driver";
-    phone: string;
+    email: string;
+    password: string;
   },
   updateAccessToken: () => void
 ) => {
   const { setUser: setDriverUser } = useDriverStore.getState();
 
   try {
-    const res = await authAxios.post(`/auth/signin`, payload);
-    console.log("res", res);
+    const res = await authAxios.post(`/driver/login`, payload);
     const data = res.data as { user: any; access_token: string; refresh_token: string };
 
-    tokenStorage.set("user_role", payload.role);
+    // First store the tokens
+    await tokenStorage.set("access_token", data.access_token);
+    await tokenStorage.set("refresh_token", data.refresh_token);
+    await tokenStorage.set("user_role", payload.role);
 
+    // Then set the user data
     setDriverUser(data.user);
-    tokenStorage.set("access_token", data.access_token);
-    tokenStorage.set("refresh_token", data.refresh_token);
 
-    resetAndNavigate("/screens/driver/HomeScreen");
+    // Update token and navigate
     updateAccessToken();
+    resetAndNavigate("/(driver)/home" as any);
   } catch (error: any) {
     Alert.alert(
       "Error",
-      "An error occurred while signing in. Please try again."
+      error.response?.data?.message || "An error occurred while signing in. Please try again."
     );
     console.error("Signin error:", error || "Error signin");
+    throw error; // Re-throw to handle in the UI
   }
 };
 
@@ -52,27 +57,43 @@ export const parentSignin = async (
   const { setUser } = useAuthStore.getState();
   try {
     const res = await authAxios.post(`/parent/login`, payload);
-    const data = res.data as { access_token: string; refresh_token: string; user: any };
-    tokenStorage.set("user_role", "parent");
-    tokenStorage.set("access_token", data.access_token);
-    tokenStorage.set("refresh_token", data.refresh_token);
-    tokenStorage.set("user", JSON.stringify(data.user));
-    setUser(data.user);
-    resetAndNavigate("/parent/home");
+    const data = res.data as { access_token: string; refresh_token: string; user: ParentProfile };
+    const userWithRole = {
+      ...data.user,
+      role: 'parent'
+    };
+
+    // First store the tokens
+    await tokenStorage.set("access_token", data.access_token);
+    await tokenStorage.set("refresh_token", data.refresh_token);
+    await tokenStorage.set("user_role", "parent");
+    await tokenStorage.set("user", JSON.stringify(userWithRole));
+
+    // Then set the user data
+    setUser(userWithRole);
+
+    // Update token and navigate
     updateAccessToken();
+    resetAndNavigate("/(parent)/home" as any);
   } catch (error: any) {
     Alert.alert(
       "Error",
-      "An error occurred while signing in. Please try again."
+      error.response?.data?.message || "An error occurred while signing in. Please try again."
     );
     console.error("Parent signin error:", error || "Error signin");
+    throw error; // Re-throw to handle in the UI
   }
 };
 
-export const logout = () => {
+export const logout = async () => {
   const { clearDriverData } = useDriverStore.getState();
   const { logout: clearAuth } = useAuthStore.getState();
+  
+  // Clear store data
   clearDriverData();
   clearAuth();
+  
+  // Clear storage and navigate
+  await tokenStorage.clearAll();
   resetAndNavigate("/role");
 };

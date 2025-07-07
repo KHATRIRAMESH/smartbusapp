@@ -8,10 +8,13 @@ export interface AuthState {
   user: {
     id: string;
     role: string;
+    name: string;
+    email: string;
+    phone: string;
   } | null;
   role: string | null;
   setTokens: (access: string | null, refresh: string | null) => Promise<void>;
-  setUser: (user: { id: string; role: string } | null) => Promise<void>;
+  setUser: (user: { id: string; role: string; name: string; email: string; phone: string; } | null) => Promise<void>;
   loadFromStorage: () => Promise<void>;
   logout: () => Promise<void>;
 }

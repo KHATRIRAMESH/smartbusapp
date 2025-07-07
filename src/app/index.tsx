@@ -9,10 +9,11 @@ import { router } from "expo-router";
 import { useFonts } from "expo-font";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
-import { Alert, Image, View } from "react-native";
+import { ActivityIndicator, Image, View } from "react-native";
 
 interface DecodedToken {
   exp: number;
+  role?: string;
 }
 
 const Main = () => {
@@ -25,64 +26,85 @@ const Main = () => {
   });
 
   const { user } = useDriverStore();
-  const [hasNavigated, setHasNavigated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const tokenCheck = async () => {
-    const access_token = tokenStorage.getString("access_token") as string;
-    const refresh_token = tokenStorage.getString("refresh_token") as string;
+    try {
+      const access_token = await tokenStorage.get("access_token");
+      const refresh_token = await tokenStorage.get("refresh_token");
 
-    if (access_token) {
-      const decodedAccessToken = jwtDecode<DecodedToken>(access_token);
-      const decodeRefreshToken = jwtDecode<DecodedToken>(refresh_token);
-      const currentTime = Date.now() / 1000;
+      if (access_token && refresh_token) {
+        const decodedAccessToken = jwtDecode<DecodedToken>(access_token);
+        const decodeRefreshToken = jwtDecode<DecodedToken>(refresh_token);
+        const currentTime = Date.now() / 1000;
 
-      if (decodeRefreshToken?.exp < currentTime) {
-        logout();
-        Alert.alert("Session Expired", "Please log in again.");
-      }
-      if (decodedAccessToken?.exp < currentTime) {
-        try {
-          refresh_tokens();
-        } catch (error) {
-          console.error("Error refreshing token:", error);
-          Alert.alert("Error", "Failed to refresh token. Please log in again.");
+        // Check refresh token expiration
+        if (decodeRefreshToken?.exp < currentTime) {
+          await logout();
+          router.replace("/role");
+          return;
         }
-      }
-      if (user) {
-        router.replace("/(driver)/home" as any);
+
+        // Check access token expiration
+        if (decodedAccessToken?.exp < currentTime) {
+          try {
+            await refresh_tokens();
+          } catch (error) {
+            console.error("Error refreshing token:", error);
+            router.replace("/role");
+            return;
+          }
+        }
+
+        // Navigate based on role
+        const role = decodedAccessToken?.role;
+        if (role === 'driver') {
+          router.replace("/(driver)/home");
+        } else if (role === 'parent') {
+          router.replace("/(parent)/home");
+        } else {
+          router.replace("/role");
+        }
       } else {
-        router.replace("/role" as any);
+        router.replace("/role");
       }
-      return;
+    } catch (error) {
+      console.error("Error checking tokens:", error);
+      router.replace("/role");
+    } finally {
+      setIsLoading(false);
     }
-    router.replace("/role" as any);
   };
 
   useEffect(() => {
-    if (fontsLoaded && !hasNavigated) {
+    if (fontsLoaded) {
       const timeoutId = setTimeout(() => {
         tokenCheck();
-        setHasNavigated(true);
       }, 2000);
       return () => clearTimeout(timeoutId);
     }
-  }, [fontsLoaded, hasNavigated]);
+  }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
+  if (!fontsLoaded || isLoading) {
+    return (
+      <View style={[commonStyles.container, { backgroundColor: '#fff' }]}>
+        <Image
+          source={require("@/assets/images/bus-location.png")}
+          style={splashStyles.img}
+        />
+        <CustomText variant="h5" fontFamily="Medium" style={splashStyles.text}>
+          Made in 🇳🇵
+        </CustomText>
+        <ActivityIndicator 
+          size="large" 
+          color="#4CAF50" 
+          style={{ position: 'absolute', bottom: 40 }}
+        />
+      </View>
+    );
   }
 
-  return (
-    <View style={commonStyles.container}>
-      <Image
-        source={require("@/assets/images/bus-location.png")}
-        style={splashStyles.img}
-      />
-      <CustomText variant="h5" fontFamily="Medium" style={splashStyles.text}>
-        Made in 🇳🇵
-      </CustomText>
-    </View>
-  );
+  return null;
 };
 
 export default Main;

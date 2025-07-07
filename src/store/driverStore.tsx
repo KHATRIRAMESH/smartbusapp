@@ -1,69 +1,119 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { mmkvStorage } from "./storage";
-import { MMKV } from 'react-native-mmkv';
+import { tokenStorage } from "./storage";
+import { Driver } from "@/utils/types/types";
+import { getDriverBus } from "@/service/driver";
 
-type CustomLocation = {
-  latitude: number;
-  longitude: number;
-  address: string;
-  heading: number;
-} | null;
-
-interface DriverStoreProps {
-  user: any;
-  location: CustomLocation;
-  outOfRange: boolean;
+interface DriverState {
+  user: Driver | null;
   busId: string | null;
-  status: string;
-  setUser: (data: any) => void;
-  setOnDuty: (data: boolean) => void;
-  setLocation: (data: CustomLocation) => void;
+  busInfo: any | null;
+  status: 'online' | 'offline' | 'on_trip';
+  isLoading: boolean;
+  error: string | null;
+  setUser: (user: Driver | null) => void;
+  setBusId: (busId: string) => void;
+  setBusInfo: (busInfo: any) => void;
+  setStatus: (status: 'online' | 'offline' | 'on_trip') => void;
+  setLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
   clearDriverData: () => void;
-  setBusId: (id: string | null) => void;
-  setBusStatus: (status: string) => void;
-  clearDriverStore: () => void;
+  loadFromStorage: () => Promise<void>;
+  loadDriverBus: () => Promise<void>;
 }
 
-const storage = new MMKV();
+export const useDriverStore = create<DriverState>((set, get) => ({
+  user: null,
+  busId: null,
+  busInfo: null,
+  status: 'offline',
+  isLoading: false,
+  error: null,
 
-export const useDriverStore = create<DriverStoreProps>()(
-  persist(
-    (set) => ({
-      user: null,
-      location: null,
-      outOfRange: false,
-      busId: storage.getString('busId') || null,
-      status: storage.getString('busStatus') || 'offline',
-      setUser: (data) => set({ user: data }),
-      setOnDuty: (data) => set({ outOfRange: data }),
-      setLocation: (data) => set({ location: data }),
-      clearDriverData: () =>
-        set({ user: null, location: null, outOfRange: false }),
-      setBusId: (id) => {
-        if (id) {
-          storage.set('busId', id);
-        } else {
-          storage.delete('busId');
-        }
-        set({ busId: id });
-      },
-      setBusStatus: (status) => {
-        storage.set('busStatus', status);
-        set({ status });
-      },
-      clearDriverStore: () => {
-        storage.delete('busId');
-        storage.delete('busStatus');
-        set({ busId: null, status: 'offline' });
-      },
-    }),
-    {
-      name: "driver-storage",
-      storage: createJSONStorage(() => mmkvStorage),
-      partialize: (state) => ({
-        user: state.user,
-      }),
+  setUser: (user) => {
+    set({ user });
+    if (user) {
+      tokenStorage.set('driver_user', JSON.stringify(user));
+    } else {
+      tokenStorage.delete('driver_user');
     }
-  )
-);
+  },
+
+  setBusId: async (busId) => {
+    await tokenStorage.set('busId', busId);
+    set({ busId });
+  },
+
+  setBusInfo: (busInfo) => {
+    set({ busInfo });
+    if (busInfo) {
+      get().setBusId(busInfo.id);
+    }
+  },
+
+  setStatus: async (status) => {
+    console.log('DriverStore: Setting status to:', status);
+    await tokenStorage.set('busStatus', status);
+    set({ status });
+  },
+
+  setLoading: (isLoading) => set({ isLoading }),
+
+  setError: (error) => set({ error }),
+
+  clearDriverData: async () => {
+    await Promise.all([
+      tokenStorage.delete('busId'),
+      tokenStorage.delete('busStatus'),
+      tokenStorage.delete('driver_user'),
+    ]);
+    
+    set({
+      user: null,
+      busId: null,
+      busInfo: null,
+      status: 'offline',
+      error: null,
+    });
+  },
+
+  loadFromStorage: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      
+      const [busId, status, userStr] = await Promise.all([
+        tokenStorage.get('busId'),
+        tokenStorage.get('busStatus'),
+        tokenStorage.get('driver_user'),
+      ]);
+
+      const user = userStr ? JSON.parse(userStr) as Driver : null;
+
+      set({
+        busId: busId || null,
+        status: (status as 'online' | 'offline' | 'on_trip') || 'offline',
+        user,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Error loading driver data from storage:', error);
+      set({ 
+        error: 'Failed to load driver data',
+        isLoading: false,
+      });
+    }
+  },
+
+  loadDriverBus: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const busInfo = await getDriverBus();
+      set({ busInfo, busId: busInfo.id, isLoading: false });
+    } catch (error) {
+      console.error('Error loading driver bus:', error);
+      set({ 
+        error: 'Failed to load bus information',
+        isLoading: false,
+      });
+    }
+  },
+}));

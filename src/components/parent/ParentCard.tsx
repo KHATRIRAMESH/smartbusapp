@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { CustomText } from '../shared/CustomText';
+import CustomText from '../shared/CustomText';
 import SettingModal from './SettingModal';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ParentProfile {
   id: string;
