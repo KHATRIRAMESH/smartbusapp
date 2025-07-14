@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import CustomText from '@/components/shared/CustomText';
 import { useDriverStore } from '@/store/driverStore';
@@ -49,141 +50,143 @@ const DriverAuthScreen = () => {
     setLoading(true);
 
     try {
-      const response = await loginDriver({ email, password });
-      
-      if (!response.access_token || !response.refresh_token || !response.user) {
-        throw new Error('Invalid response from server');
+      const response = await loginDriver({
+        email,
+        password
+      });
+
+      if (response.access_token && response.refresh_token && response.user) {
+        setUser(response.user);
+        await tokenStorage.set('access_token', response.access_token);
+        await tokenStorage.set('refresh_token', response.refresh_token);
+        await tokenStorage.set('user_role', 'driver');
+        
+        Alert.alert(
+          'Success',
+          'Login successful! Welcome to SmartBus.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/(driver)/home' as any)
+            }
+          ]
+        );
+      } else {
+        setError('Invalid response from server. Please try again.');
       }
-
-      // Store tokens
-      await Promise.all([
-        tokenStorage.set('access_token', response.access_token),
-        tokenStorage.set('refresh_token', response.refresh_token),
-        tokenStorage.set('user_role', 'driver'),
-      ]);
-
-      // Set user in store
-      setUser(response.user);
-
-      // Navigate to home
-      router.replace('/(driver)/home' as any);
-    } catch (err: any) {
-      console.error('Login error:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to login. Please try again.';
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Network error. Please check your connection and try again.';
       setError(errorMessage);
-      Alert.alert('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardContainer}
       >
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <CustomText style={styles.welcomeText}>Welcome Driver!</CustomText>
-          <CustomText style={styles.subtitle}>
-            Sign in to start your journey
-          </CustomText>
-        </View>
-
-        <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-            <View style={styles.inputWrapper}>
-              <CustomText style={styles.label}>Email</CustomText>
-              <View style={styles.input}>
-                <TextInput
-                  style={styles.inputText}
-                  onChangeText={setEmail}
-                  value={email}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  placeholder="Enter your email"
-                  placeholderTextColor="#999"
-                  editable={!isLoading}
-                />
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-            <View style={styles.inputWrapper}>
-              <CustomText style={styles.label}>Password</CustomText>
-              <View style={styles.input}>
-                <TextInput
-                  style={styles.inputText}
-                  onChangeText={setPassword}
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  placeholder="Enter your password"
-                  placeholderTextColor="#999"
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                  disabled={isLoading}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={20}
-                    color="#666"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          {error && (
-            <CustomText style={styles.errorText}>{error}</CustomText>
-          )}
-
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <CustomText style={styles.loginButtonText}>Sign In</CustomText>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.helpContainer}>
-            <CustomText style={styles.helpText}>
-              Having trouble signing in?
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <CustomText style={styles.welcomeText}>Welcome Driver!</CustomText>
+            <CustomText style={styles.subtitle}>
+              Sign in to start your journey
             </CustomText>
-            <TouchableOpacity
-              onPress={() => Alert.alert(
-                'Contact Support',
-                'Please contact your school administrator for assistance.'
-              )}
-            >
-              <CustomText style={styles.contactText}>
-                Contact Support
-              </CustomText>
-            </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputWrapper}>
+                <CustomText style={styles.label}>Email</CustomText>
+                <View style={styles.input}>
+                  <TextInput
+                    style={styles.inputText}
+                    onChangeText={setEmail}
+                    value={email}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    placeholder="Enter your email"
+                    placeholderTextColor="#999"
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputWrapper}>
+                <CustomText style={styles.label}>Password</CustomText>
+                <View style={styles.input}>
+                  <TextInput
+                    style={styles.inputText}
+                    onChangeText={setPassword}
+                    value={password}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    placeholder="Enter your password"
+                    placeholderTextColor="#999"
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                    disabled={isLoading}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {error && (
+              <CustomText style={styles.errorText}>{error}</CustomText>
+            )}
+
+            <TouchableOpacity
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <CustomText style={styles.loginButtonText}>Sign In</CustomText>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.helpContainer}>
+              <CustomText style={styles.helpText}>
+                Need help? Contact your administrator
+              </CustomText>
+              <TouchableOpacity onPress={() => {}}>
+                <CustomText style={styles.contactText}>
+                  support@smartbus.com
+                </CustomText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -191,6 +194,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

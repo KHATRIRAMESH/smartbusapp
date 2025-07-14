@@ -15,7 +15,8 @@ const getServerUrl = () => {
 };
 
 export const BASE_URL = getServerUrl();
-export const SOCKET_URL = BASE_URL.replace('http', 'ws').replace('https', 'wss');
+// Socket.IO uses HTTP/HTTPS, not WebSocket protocol
+export const SOCKET_URL = BASE_URL;
 
 // API endpoints
 export const API_ENDPOINTS = {

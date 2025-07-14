@@ -11,6 +11,7 @@ import {
   Dimensions,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import CustomText from '@/components/shared/CustomText';
 import { useAuthStore } from '@/store/authStore';
@@ -51,102 +52,104 @@ const ParentAuthScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardContainer}
       >
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <CustomText style={styles.welcomeText}>Welcome Back!</CustomText>
-          <CustomText style={styles.subtitle}>
-            Sign in to track your child's journey
-          </CustomText>
-        </View>
-
-        <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-            <View style={styles.inputWrapper}>
-              <CustomText style={styles.label}>Email</CustomText>
-              <View style={styles.input}>
-                <TextInput
-                  style={styles.inputText}
-                  onChangeText={setEmail}
-                  value={email}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  placeholder="Enter your email"
-                  placeholderTextColor="#999"
-                />
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-            <View style={styles.inputWrapper}>
-              <CustomText style={styles.label}>Password</CustomText>
-              <View style={styles.input}>
-                <TextInput
-                  style={styles.inputText}
-                  onChangeText={setPassword}
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  placeholder="Enter your password"
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={20}
-                    color="#666"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          {error && (
-            <CustomText style={styles.errorText}>{error}</CustomText>
-          )}
-
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <CustomText style={styles.loginButtonText}>Sign In</CustomText>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => {/* Implement forgot password */}}
-          >
-            <CustomText style={styles.forgotPasswordText}>
-              Forgot Password?
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <CustomText style={styles.welcomeText}>Welcome Back!</CustomText>
+            <CustomText style={styles.subtitle}>
+              Sign in to track your child's journey
             </CustomText>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </View>
+
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputWrapper}>
+                <CustomText style={styles.label}>Email</CustomText>
+                <View style={styles.input}>
+                  <TextInput
+                    style={styles.inputText}
+                    onChangeText={setEmail}
+                    value={email}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    placeholder="Enter your email"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputWrapper}>
+                <CustomText style={styles.label}>Password</CustomText>
+                <View style={styles.input}>
+                  <TextInput
+                    style={styles.inputText}
+                    onChangeText={setPassword}
+                    value={password}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    placeholder="Enter your password"
+                    placeholderTextColor="#999"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {error && (
+              <CustomText style={styles.errorText}>{error}</CustomText>
+            )}
+
+            <TouchableOpacity
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <CustomText style={styles.loginButtonText}>Sign In</CustomText>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={() => {/* Implement forgot password */}}
+            >
+              <CustomText style={styles.forgotPasswordText}>
+                Forgot Password?
+              </CustomText>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -154,6 +157,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

@@ -32,8 +32,8 @@ export const useParentTracking = (): UseParentTrackingReturn => {
   const [isStale, setIsStale] = useState(false);
   const [currentBusId, setCurrentBusId] = useState<string | null>(null);
   const { accessToken } = useAuthStore();
-  const staleCheckInterval = useRef<ReturnType<typeof setInterval>>();
-  const reconnectTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const staleCheckInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Check for stale data
   useEffect(() => {
@@ -193,9 +193,10 @@ export const useParentTracking = (): UseParentTrackingReturn => {
   }, [accessToken, currentBusId, isTracking]);
 
   const startTracking = (busId: string) => {
-    console.log('Starting to track bus:', busId);
-    console.log('Socket connected:', socket.connected);
-    console.log('Socket ID:', socket.id);
+    console.log('🚌 Parent: Starting to track bus:', busId);
+    console.log('🔌 Socket connected:', socket.connected);
+    console.log('🔌 Socket ID:', socket.id);
+    console.log('🔌 Socket auth:', socket.auth);
     
     setCurrentBusId(busId);
     
@@ -203,16 +204,32 @@ export const useParentTracking = (): UseParentTrackingReturn => {
     socket.emit('ping', { busId, action: 'startTracking', timestamp: new Date() });
     
     if (socket.connected) {
+      console.log('📡 Emitting subscribeToBus event with busId:', busId);
       socket.emit('subscribeToBus', { busId });
-      console.log('Emitted subscribeToBus event with busId:', busId);
+      console.log('✅ Emitted subscribeToBus event');
     } else {
-      console.log('Socket not connected, attempting to connect...');
+      console.log('🔌 Socket not connected, attempting to connect...');
+      socket.auth = { token: accessToken };
       socket.connect();
-      socket.on('connect', () => {
-        console.log('Socket connected after manual connection');
+      
+      const handleConnect = () => {
+        console.log('✅ Socket connected after manual connection');
+        console.log('📡 Emitting subscribeToBus event after connection with busId:', busId);
         socket.emit('subscribeToBus', { busId });
-        console.log('Emitted subscribeToBus event after connection with busId:', busId);
-      });
+        console.log('✅ Emitted subscribeToBus event after connection');
+        socket.removeListener('connect', handleConnect);
+        socket.removeListener('connect_error', handleConnectError);
+      };
+      
+      const handleConnectError = (err: Error) => {
+        console.error('❌ Socket connection error:', err);
+        setError('Failed to connect to tracking service: ' + err.message);
+        socket.removeListener('connect', handleConnect);
+        socket.removeListener('connect_error', handleConnectError);
+      };
+      
+      socket.on('connect', handleConnect);
+      socket.on('connect_error', handleConnectError);
     }
     
     setIsTracking(true);

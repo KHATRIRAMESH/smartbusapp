@@ -28,11 +28,9 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
 
   useEffect(() => {
     if (child.bus?.id) {
-      console.log('ParentMapScreen: Starting to track bus:', child.bus.id);
       startTracking(child.bus.id);
     }
     return () => {
-      console.log('ParentMapScreen: Stopping tracking');
       stopTracking();
     };
   }, [child.bus?.id]);
@@ -40,7 +38,6 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
   // Update map region when bus location changes
   useEffect(() => {
     if (busLocation && mapRef.current) {
-      console.log('ParentMapScreen: Updating map region with new location:', busLocation.coords);
       mapRef.current.animateToRegion({
         latitude: busLocation.coords.latitude,
         longitude: busLocation.coords.longitude,
@@ -60,9 +57,7 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
     );
   }
 
-  console.log('ParentMapScreen: Current bus location:', busLocation);
-  console.log('ParentMapScreen: Is tracking:', isTracking);
-  console.log('ParentMapScreen: Error:', error);
+
 
   const BusMarker = () => (
     <View style={styles.busMarkerContainer}>
@@ -193,26 +188,7 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
             </View>
           )}
 
-          {/* Debug Info */}
-          {__DEV__ && (
-            <View style={styles.debugContainer}>
-              <CustomText variant="h7" style={styles.debugText}>
-                Debug Info:
-              </CustomText>
-              <CustomText variant="h7" style={styles.debugText}>
-                Bus ID: {child.bus?.id}
-              </CustomText>
-              <CustomText variant="h7" style={styles.debugText}>
-                Is Tracking: {isTracking ? 'Yes' : 'No'}
-              </CustomText>
-              <CustomText variant="h7" style={styles.debugText}>
-                Has Location: {busLocation ? 'Yes' : 'No'}
-              </CustomText>
-              <CustomText variant="h7" style={styles.debugText}>
-                Error: {error || 'None'}
-              </CustomText>
-            </View>
-          )}
+
         </ScrollView>
       )}
     </View>
@@ -397,16 +373,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: Colors.textLight,
   },
-  debugContainer: {
-    margin: 16,
-    padding: 12,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
-  },
-  debugText: {
-    color: "#333",
-    marginBottom: 4,
-  },
+
 });
 
 export default ParentMapScreen;

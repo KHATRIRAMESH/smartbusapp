@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/service/apiInterceptors';
 import { Child } from '@/utils/types/types';
+import { queryKeys } from '@/service/QueryProvider';
 
 interface ApiResponse {
   data: Child[];
@@ -8,7 +9,7 @@ interface ApiResponse {
 
 export const useParentChildren = () => {
   return useQuery({
-    queryKey: ['parentChildren'],
+    queryKey: queryKeys.parentChildren,
     queryFn: async (): Promise<Child[]> => {
       try {
         const response = await api.get<ApiResponse>('/parent/children');
@@ -21,9 +22,18 @@ export const useParentChildren = () => {
         throw error;
       }
     },
-    retry: 2,
+    // Optimization: Increased stale time for relatively static data
+    staleTime: 1000 * 60 * 10, // 10 minutes (was 30 seconds)
+    // Optimization: Reduced refetch frequency
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // Only refetch if data is stale
+    // Optimization: Enable background refetch for data freshness
+    refetchOnReconnect: true,
+    // Optimization: Custom retry logic
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 404) return false;
+      return failureCount < 2;
+    },
     retryDelay: 1000,
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    refetchOnWindowFocus: true,
   });
 }; 

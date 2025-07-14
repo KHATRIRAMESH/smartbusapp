@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useParentChildren } from "@/hooks/parent/useParentChildren";
 import { useParentProfile } from "@/hooks/parent/useParentProfile";
 import CustomText from "@/components/shared/CustomText";
@@ -44,20 +45,20 @@ const ParentHomeScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <CustomText variant="h5" style={styles.loadingText}>
             Loading...
           </CustomText>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <CustomText variant="h5" style={styles.errorText}>
             {error instanceof Error ? error.message : "Error loading data"}
@@ -71,13 +72,13 @@ const ParentHomeScreen = () => {
             </CustomText>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (selectedChild) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -92,12 +93,12 @@ const ParentHomeScreen = () => {
           </CustomText>
         </View>
         <ParentMapScreen child={selectedChild} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
         <CustomText variant="h3" fontFamily="SemiBold" style={styles.title}>
           My Children
@@ -150,7 +151,7 @@ const ParentHomeScreen = () => {
         onClose={() => setShowSettings(false)}
         parent={profile}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
