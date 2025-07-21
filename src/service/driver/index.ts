@@ -1,32 +1,95 @@
 import { api } from '../apiInterceptors';
-import { authAxios } from '../authService';
-import { Driver, DriverLoginPayload, DriverLoginResponse } from '@/utils/types/types';
-import { tokenStorage } from '@/store/storage';
 
-interface LocationUpdate {
+export interface DriverProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  licenseNumber: string;
+  address?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  assignedBus?: {
+    id: string;
+    busNumber: string;
+    plateNumber: string;
+    capacity: number;
+    model: string;
+  } | null;
+}
+
+export interface DriverBusInfo {
+  id: string;
+  busNumber: string;
+  plateNumber: string;
+  capacity: number;
+  model: string;
+  isActive: boolean;
+  route?: {
+    id: string;
+    name: string;
+    startStop: string;
+    endStop: string;
+    stops: string[];
+  } | null;
+}
+
+export interface LoginDriverRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginDriverResponse {
+  access_token: string;
+  refresh_token: string;
+  user: DriverProfile;
+  message: string;
+}
+
+// Get driver profile
+export const getDriverProfile = async (): Promise<DriverProfile> => {
+  try {
+    console.log('[getDriverProfile] Making API call to /driver/profile');
+    const response = await api.get<{ data: DriverProfile }>('/driver/profile');
+    console.log('[getDriverProfile] API response:', response.data);
+    return response.data.data;
+  } catch (error) {
+    console.error('[getDriverProfile] Error fetching driver profile:', error);
+    throw error;
+  }
+};
+
+// Get driver's assigned bus
+export const getDriverBus = async (): Promise<DriverBusInfo> => {
+  try {
+    const response = await api.get<{ data: DriverBusInfo }>('/driver/bus');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching driver bus:', error);
+    throw error;
+  }
+};
+
+// Login driver
+export const loginDriver = async (credentials: LoginDriverRequest): Promise<LoginDriverResponse> => {
+  try {
+    const response = await api.post<LoginDriverResponse>('/driver/login', credentials);
+    return response.data;
+  } catch (error) {
+    console.error('Error logging in driver:', error);
+    throw error;
+  }
+};
+
+// Update bus location (for location tracking)
+export const updateBusLocation = async (busId: string, locationData: {
   latitude: number;
   longitude: number;
   speed: number | null;
   heading: number | null;
   status: string;
-}
-
-export const loginDriver = async (payload: DriverLoginPayload): Promise<DriverLoginResponse> => {
-  const response = await authAxios.post<DriverLoginResponse>('/driver/login', payload);
-  return response.data;
-};
-
-export const getDriverProfile = async (): Promise<Driver> => {
-  const response = await api.get<{ data: Driver }>('/driver/profile');
-  return response.data.data;
-};
-
-export const getDriverBus = async () => {
-  const response = await api.get<{ data: any }>('/driver/bus');
-  return response.data.data;
-};
-
-export const updateBusLocation = async (busId: string, locationData: LocationUpdate) => {
+}) => {
   try {
     const response = await api.post(`/tracking/bus/${busId}/location`, locationData);
     return response.data;
@@ -36,6 +99,16 @@ export const updateBusLocation = async (busId: string, locationData: LocationUpd
   }
 };
 
-export const updateDriverStatus = async (status: 'online' | 'offline' | 'on_trip'): Promise<void> => {
-  await api.post('/driver/status', { status });
+// Change password (using the general auth endpoint)
+export const changeDriverPassword = async (currentPassword: string, newPassword: string) => {
+  try {
+    const response = await api.post('/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error changing driver password:', error);
+    throw error;
+  }
 }; 

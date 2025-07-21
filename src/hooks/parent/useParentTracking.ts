@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { socket } from '@/service/WSProvider';
 import { useAuthStore } from '@/store/authStore';
+import { tokenStorage } from '@/store/storage';
 
 interface BusLocation {
   coords: {
@@ -53,11 +54,21 @@ export const useParentTracking = (): UseParentTrackingReturn => {
   }, [isTracking, busLocation]);
 
   useEffect(() => {
-    if (!socket.connected && accessToken) {
-      console.log('Setting up socket auth and connecting...');
-      socket.auth = { token: accessToken };
-      socket.connect();
-    }
+    const setupSocketConnection = async () => {
+      // Get access token from storage (more reliable than auth store)
+      const currentAccessToken = await tokenStorage.get('access_token');
+      console.log('🔑 Parent access token available:', !!currentAccessToken);
+      
+      if (!socket.connected && currentAccessToken) {
+        console.log('🔌 Parent: Setting up socket auth and connecting...');
+        socket.auth = { token: currentAccessToken };
+        socket.connect();
+      } else if (!currentAccessToken) {
+        console.error('❌ Parent: No access token available for socket authentication');
+      }
+    };
+
+    setupSocketConnection();
 
     const handleConnect = () => {
       console.log('Socket connected in parent tracking');
@@ -192,13 +203,22 @@ export const useParentTracking = (): UseParentTrackingReturn => {
     };
   }, [accessToken, currentBusId, isTracking]);
 
-  const startTracking = (busId: string) => {
+  const startTracking = async (busId: string) => {
     console.log('🚌 Parent: Starting to track bus:', busId);
     console.log('🔌 Socket connected:', socket.connected);
     console.log('🔌 Socket ID:', socket.id);
     console.log('🔌 Socket auth:', socket.auth);
     
     setCurrentBusId(busId);
+    
+    // Get access token from storage for authentication
+    const currentAccessToken = await tokenStorage.get('access_token');
+    console.log('🔑 Parent tracking token available:', !!currentAccessToken);
+    
+    if (!currentAccessToken) {
+      setError('No access token available for tracking authentication');
+      return;
+    }
     
     // Test socket communication first
     socket.emit('ping', { busId, action: 'startTracking', timestamp: new Date() });
@@ -209,11 +229,11 @@ export const useParentTracking = (): UseParentTrackingReturn => {
       console.log('✅ Emitted subscribeToBus event');
     } else {
       console.log('🔌 Socket not connected, attempting to connect...');
-      socket.auth = { token: accessToken };
+      socket.auth = { token: currentAccessToken };
       socket.connect();
       
       const handleConnect = () => {
-        console.log('✅ Socket connected after manual connection');
+        console.log('✅ Parent: Socket connected after manual connection');
         console.log('📡 Emitting subscribeToBus event after connection with busId:', busId);
         socket.emit('subscribeToBus', { busId });
         console.log('✅ Emitted subscribeToBus event after connection');
@@ -222,7 +242,7 @@ export const useParentTracking = (): UseParentTrackingReturn => {
       };
       
       const handleConnectError = (err: Error) => {
-        console.error('❌ Socket connection error:', err);
+        console.error('❌ Parent: Socket connection error:', err);
         setError('Failed to connect to tracking service: ' + err.message);
         socket.removeListener('connect', handleConnect);
         socket.removeListener('connect_error', handleConnectError);
@@ -256,7 +276,15 @@ export const useParentTracking = (): UseParentTrackingReturn => {
     }
   };
 
-  const reconnect = () => {
+  const reconnect = async () => {
+    // Get fresh access token for reconnection
+    const currentAccessToken = await tokenStorage.get('access_token');
+    console.log('🔄 Parent: Reconnecting with token:', !!currentAccessToken);
+    
+    if (currentAccessToken) {
+      socket.auth = { token: currentAccessToken };
+    }
+    
     if (!socket.connected) {
       socket.connect();
     }

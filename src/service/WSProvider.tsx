@@ -35,8 +35,10 @@ if (__DEV__) {
 
 // Export a function to initialize socket auth
 export const initializeSocketAuth = (accessToken: string) => {
+  console.log('🔑 Initializing socket auth with token:', !!accessToken);
   socket.auth = { token: accessToken };
   if (!socket.connected) {
+    console.log('🔌 Connecting socket with new auth...');
     socket.connect();
   }
 };
@@ -44,8 +46,14 @@ export const initializeSocketAuth = (accessToken: string) => {
 // Export a function to disconnect socket
 export const disconnectSocket = () => {
   if (socket.connected) {
+    console.log('🔌 Disconnecting socket...');
     socket.disconnect();
   }
+};
+
+// Export a function to check connection status
+export const isSocketConnected = () => {
+  return socket.connected;
 };
 
 export default socket;

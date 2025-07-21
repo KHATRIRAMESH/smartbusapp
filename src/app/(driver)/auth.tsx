@@ -60,17 +60,18 @@ const DriverAuthScreen = () => {
         await tokenStorage.set('access_token', response.access_token);
         await tokenStorage.set('refresh_token', response.refresh_token);
         await tokenStorage.set('user_role', 'driver');
+        router.replace('/(driver)/home' as any)
         
-        Alert.alert(
-          'Success',
-          'Login successful! Welcome to SmartBus.',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/(driver)/home' as any)
-            }
-          ]
-        );
+        // Alert.alert(
+        //   'Success',
+        //   'Login successful! Welcome to SmartBus.',
+        //   [
+        //     {
+        //       text: 'OK',
+        //       onPress: () => router.replace('/(driver)/home' as any)
+        //     }
+        //   ]
+        // );
       } else {
         setError('Invalid response from server. Please try again.');
       }

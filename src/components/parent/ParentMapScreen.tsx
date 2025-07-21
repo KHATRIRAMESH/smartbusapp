@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, ActivityIndicator, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import CustomText from "@/components/shared/CustomText";
 import { Colors } from "@/utils/Constants";
@@ -38,12 +38,15 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
   // Update map region when bus location changes
   useEffect(() => {
     if (busLocation && mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: busLocation.coords.latitude,
-        longitude: busLocation.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 1000);
+      mapRef.current.animateToRegion(
+        {
+          latitude: busLocation.coords.latitude,
+          longitude: busLocation.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000
+      );
     }
   }, [busLocation]);
 
@@ -57,20 +60,19 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
     );
   }
 
-
-
   const BusMarker = () => (
     <View style={styles.busMarkerContainer}>
-      <View style={[styles.busMarker, { backgroundColor: isStale ? '#ff6b6b' : Colors.primary }]}>
-        <Ionicons 
-          name="bus" 
-          size={20} 
-          color="#FFF" 
-        />
+      <View
+        style={[
+          styles.busMarker,
+          { backgroundColor: isStale ? "#ff6b6b" : Colors.primary },
+        ]}
+      >
+        <Ionicons name="bus" size={20} color="#FFF" />
       </View>
       <View style={styles.busMarkerLabel}>
         <CustomText variant="h8" style={styles.busMarkerText}>
-          {child.bus?.busNumber || 'Bus'}
+          {child.bus?.busNumber || "Bus"}
         </CustomText>
       </View>
       <View style={styles.markerPin} />
@@ -101,10 +103,16 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
                 longitude: busLocation.coords.longitude,
               }}
               title={`Bus ${child.bus.busNumber}`}
-              description={`Status: ${busLocation.status} | Speed: ${busLocation.coords.speed || 0} km/h`}
+              description={`Status: ${busLocation.status} | Speed: ${
+                busLocation.coords.speed || 0
+              } km/h`}
               anchor={{ x: 0.5, y: 1 }}
             >
-              <BusMarker />
+              <Image
+                source={require("@/assets/images/bus-location.png")}
+                style={{ width: 40, height: 40 }}
+                resizeMode="contain"
+              />
             </Marker>
           )}
         </MapView>
@@ -138,23 +146,38 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
               </View>
               <View style={styles.busStatusInfo}>
                 <View style={styles.statusRow}>
-                  <CustomText variant="h6" style={styles.statusLabel}>Status:</CustomText>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(busLocation.status) }]}>
+                  <CustomText variant="h6" style={styles.statusLabel}>
+                    Status:
+                  </CustomText>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: getStatusColor(busLocation.status) },
+                    ]}
+                  >
                     <CustomText variant="h7" style={styles.statusText}>
                       {busLocation.status.toUpperCase()}
                     </CustomText>
                   </View>
                 </View>
                 <View style={styles.statusRow}>
-                  <CustomText variant="h6" style={styles.statusLabel}>Speed:</CustomText>
+                  <CustomText variant="h6" style={styles.statusLabel}>
+                    Speed:
+                  </CustomText>
                   <CustomText variant="h6" style={styles.statusValue}>
-                    {busLocation.coords.speed ? `${Math.round(busLocation.coords.speed * 3.6)} km/h` : 'N/A'}
+                    {busLocation.coords.speed
+                      ? `${Math.round(busLocation.coords.speed * 3.6)} km/h`
+                      : "N/A"}
                   </CustomText>
                 </View>
                 <View style={styles.statusRow}>
-                  <CustomText variant="h6" style={styles.statusLabel}>Last Update:</CustomText>
+                  <CustomText variant="h6" style={styles.statusLabel}>
+                    Last Update:
+                  </CustomText>
                   <CustomText variant="h6" style={styles.statusValue}>
-                    {busLocation.lastUpdated ? new Date(busLocation.lastUpdated).toLocaleTimeString() : 'N/A'}
+                    {busLocation.lastUpdated
+                      ? new Date(busLocation.lastUpdated).toLocaleTimeString()
+                      : "N/A"}
                   </CustomText>
                 </View>
               </View>
@@ -187,8 +210,6 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
               </CustomText>
             </View>
           )}
-
-
         </ScrollView>
       )}
     </View>
@@ -197,15 +218,15 @@ const ParentMapScreen: React.FC<ParentMapScreenProps> = ({ child }) => {
 
 const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
-    case 'online':
-    case 'in_service':
-      return '#4CAF50';
-    case 'offline':
-      return '#f44336';
-    case 'on_trip':
-      return '#FF9800';
+    case "online":
+    case "in_service":
+      return "#4CAF50";
+    case "offline":
+      return "#f44336";
+    case "on_trip":
+      return "#FF9800";
     default:
-      return '#9E9E9E';
+      return "#9E9E9E";
   }
 };
 
@@ -235,8 +256,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 3,
     borderColor: "#FFF",
     shadowColor: "#000",
@@ -268,11 +289,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 5,
     borderRightWidth: 5,
     borderTopWidth: 8,
-    borderStyle: 'solid',
-    backgroundColor: 'transparent',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: '#FFF',
+    borderStyle: "solid",
+    backgroundColor: "transparent",
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: "#FFF",
     marginTop: -1,
   },
   // Bus Status Card Styles
@@ -373,7 +394,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: Colors.textLight,
   },
-
 });
 
 export default ParentMapScreen;

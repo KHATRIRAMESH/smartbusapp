@@ -21,8 +21,10 @@ api.interceptors.request.use(
       if (accessToken) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${accessToken}`;
+        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url} - Token available: ${accessToken ? 'YES' : 'NO'}`);
+      } else {
+        console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url} - No token available`);
       }
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
       return config;
     } catch (error) {
       console.error('[API Request Error]', error);
@@ -39,7 +41,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, 
-                response.status);
+                response.status, response.data);
     return response;
   },
   async (error) => {

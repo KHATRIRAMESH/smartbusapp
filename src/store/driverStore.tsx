@@ -30,6 +30,7 @@ export const useDriverStore = create<DriverState>((set, get) => ({
   error: null,
 
   setUser: (user) => {
+    console.log('[DriverStore] Setting user:', user);
     set({ user });
     if (user) {
       tokenStorage.set('driver_user', JSON.stringify(user));
@@ -87,6 +88,8 @@ export const useDriverStore = create<DriverState>((set, get) => ({
       ]);
 
       const user = userStr ? JSON.parse(userStr) as Driver : null;
+      
+      console.log('[DriverStore] Loaded from storage - busId:', busId, 'status:', status, 'user:', user);
 
       set({
         busId: busId || null,

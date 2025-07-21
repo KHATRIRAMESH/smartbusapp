@@ -5,6 +5,10 @@ import { useDriverLocation } from '@/hooks/useDriverLocation';
 import CustomText from '@/components/shared/CustomText';
 import DriverMapScreen from '@/components/driver/DriverMapScreen';
 import { useDriverStore } from '@/store/driverStore';
+import { useDriverProfile } from '@/hooks/useDriverProfile';
+import DriverSettingsModal from '@/components/driver/DriverSettingsModal';
+import { Colors } from '@/utils/Constants';
+import { Ionicons } from '@expo/vector-icons';
 
 const DriverHomeScreen = () => {
   const { 
@@ -12,14 +16,26 @@ const DriverHomeScreen = () => {
     isBackgroundTracking, 
     startTracking, 
     stopTracking, 
-    updateBusStatus, 
+    updateStatus, 
     error,
     syncStatus 
   } = useDriverLocation();
-  const { busInfo, status, loadDriverBus, isLoading } = useDriverStore();
+  const { busInfo, status, loadDriverBus, isLoading, loadFromStorage, user } = useDriverStore();
+  const { data: driverProfile, isLoading: isProfileLoading, error: profileError } = useDriverProfile();
+  const [showSettings, setShowSettings] = useState(false);
+
+  console.log('[DriverHomeScreen] Driver profile data:', driverProfile);
+  console.log('[DriverHomeScreen] Profile loading:', isProfileLoading);
+  console.log('[DriverHomeScreen] Profile error:', profileError);
+  console.log('[DriverHomeScreen] User from store:', user);
 
   useEffect(() => {
-    loadDriverBus();
+    // Load driver data from storage first, then load bus info
+    const initializeDriver = async () => {
+      await loadFromStorage();
+      loadDriverBus();
+    };
+    initializeDriver();
   }, []);
 
   const handleStatusChange = () => {
@@ -35,7 +51,7 @@ const DriverHomeScreen = () => {
       [
         ...statusOptions.map(option => ({
           text: option.label,
-          onPress: () => updateBusStatus(option.value as 'online' | 'offline' | 'on_trip'),
+          onPress: () => updateStatus(option.value as 'online' | 'offline' | 'on_trip'),
         })),
         { text: 'Cancel', style: 'cancel' },
       ]
@@ -97,9 +113,21 @@ const DriverHomeScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.busInfo}>
-          <CustomText style={styles.title}>Bus {busInfo.busNumber}</CustomText>
-          <CustomText style={styles.subtitle}>Plate: {busInfo.plateNumber}</CustomText>
+        <View style={styles.topBar}>
+          <View style={styles.busInfo}>
+            <CustomText style={styles.title}>Bus {busInfo.busNumber}</CustomText>
+            <CustomText style={styles.subtitle}>Plate: {busInfo.plateNumber}</CustomText>
+          </View>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => setShowSettings(true)}
+          >
+            <Ionicons
+              name="person-circle-outline"
+              size={32}
+              color={Colors.primary}
+            />
+          </TouchableOpacity>
         </View>
         
         {/* Status Display and Control */}
@@ -187,6 +215,12 @@ const DriverHomeScreen = () => {
       )}
 
       <DriverMapScreen />
+
+      <DriverSettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        driver={driverProfile}
+      />
     </SafeAreaView>
   );
 };
@@ -201,8 +235,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  busInfo: {
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  busInfo: {
+    flex: 1,
+  },
+  profileButton: {
+    padding: 8,
   },
   title: {
     fontSize: 24,

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useDriverStore } from "@/store/driverStore";
 
 const DriverMapScreen = () => {
-  const { location, error, isTracking, startTracking, stopTracking, updateBusStatus } = useDriverLocation();
+  const { location, error, isTracking, startTracking, stopTracking, updateStatus } = useDriverLocation();
   const { status } = useDriverStore();
 
   useEffect(() => {
@@ -16,7 +16,7 @@ const DriverMapScreen = () => {
 
   const toggleBusStatus = () => {
     const newStatus = status === "online" ? "offline" : "online";
-    updateBusStatus(newStatus);
+    updateStatus(newStatus);
   };
 
   return (

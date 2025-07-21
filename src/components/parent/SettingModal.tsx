@@ -4,6 +4,10 @@ import CustomText from '../shared/CustomText';
 import { logout } from '@/service/authService';
 import ChangePasswordModal from './ChangePasswordModal';
 import { Colors } from '@/utils/Constants';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '@/store/authStore';
+import { tokenStorage } from '@/store/storage';
+import { isSocketConnected } from '@/service/WSProvider';
 
 interface SettingModalProps {
   visible: boolean;
@@ -18,6 +22,9 @@ interface SettingModalProps {
 const SettingModal: React.FC<SettingModalProps> = ({ visible, onClose, parent }) => {
   const [showChangePassword, setShowChangePassword] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const [showDebugInfo, setShowDebugInfo] = React.useState(false);
+  const [debugInfo, setDebugInfo] = React.useState<any>(null);
+  const { loadFromStorage, accessToken, user } = useAuthStore();
 
   const handleLogout = async () => {
     try {
@@ -27,7 +34,46 @@ const SettingModal: React.FC<SettingModalProps> = ({ visible, onClose, parent })
       console.error('Logout error:', error);
     } finally {
       setIsLoggingOut(false);
-  }
+    }
+  };
+
+  const handleRefreshAuth = async () => {
+    try {
+      console.log('[ParentSettings] Manual auth refresh triggered');
+      await loadFromStorage();
+    } catch (error) {
+      console.error('[ParentSettings] Refresh error:', error);
+    }
+  };
+
+  const handleDebugInfo = async () => {
+    try {
+      const [storageAccessToken, refreshToken, userRole, storedUser] = await Promise.all([
+        tokenStorage.get('access_token'),
+        tokenStorage.get('refresh_token'), 
+        tokenStorage.get('user_role'),
+        tokenStorage.get('user'),
+      ]);
+
+      const info = {
+        hasStorageAccessToken: !!storageAccessToken,
+        storageTokenLength: storageAccessToken ? storageAccessToken.length : 0,
+        hasRefreshToken: !!refreshToken,
+        userRole,
+        hasStoredUser: !!storedUser,
+        storeAccessToken: accessToken,
+        storeUser: user,
+        parentFromProp: parent,
+        socketConnected: isSocketConnected(),
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      setDebugInfo(info);
+      setShowDebugInfo(true);
+      console.log('[ParentSettings] Debug info:', info);
+    } catch (error) {
+      console.error('[ParentSettings] Debug error:', error);
+    }
   };
 
   return (
@@ -41,11 +87,58 @@ const SettingModal: React.FC<SettingModalProps> = ({ visible, onClose, parent })
       <View style={styles.overlay}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <CustomText style={styles.title}>Settings</CustomText>
-            <TouchableOpacity onPress={onClose}>
-              <CustomText style={styles.closeButton}>✕</CustomText>
-            </TouchableOpacity>
+            <View style={styles.headerLeft}>
+              <Ionicons name="settings" size={24} color={Colors.primary} />
+              <CustomText style={styles.title}>Settings</CustomText>
+            </View>
+            <View style={styles.headerRight}>
+              {!parent && (
+                <>
+                  <TouchableOpacity 
+                    onPress={handleDebugInfo}
+                    style={styles.debugButton}
+                  >
+                    <Ionicons 
+                      name="bug" 
+                      size={18} 
+                      color="#666" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={handleRefreshAuth}
+                    style={styles.refreshButton}
+                  >
+                    <Ionicons 
+                      name="refresh" 
+                      size={20} 
+                      color={Colors.primary} 
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
+              <TouchableOpacity onPress={onClose}>
+                <CustomText style={styles.closeButton}>✕</CustomText>
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {showDebugInfo && debugInfo && (
+            <View style={styles.debugContainer}>
+              <CustomText style={styles.debugTitle}>Debug Info ({debugInfo.timestamp}):</CustomText>
+              <CustomText style={styles.debugText}>Storage Token: {debugInfo.hasStorageAccessToken ? `YES (${debugInfo.storageTokenLength} chars)` : 'NO'}</CustomText>
+              <CustomText style={styles.debugText}>Store Token: {debugInfo.storeAccessToken ? 'YES' : 'NO'}</CustomText>
+              <CustomText style={styles.debugText}>Refresh Token: {debugInfo.hasRefreshToken ? 'YES' : 'NO'}</CustomText>
+              <CustomText style={styles.debugText}>User Role: {debugInfo.userRole || 'None'}</CustomText>
+              <CustomText style={styles.debugText}>Stored User: {debugInfo.hasStoredUser ? 'YES' : 'NO'}</CustomText>
+              <CustomText style={styles.debugText}>Socket Connected: {debugInfo.socketConnected ? 'YES' : 'NO'}</CustomText>
+              <TouchableOpacity 
+                style={styles.closeDebugButton}
+                onPress={() => setShowDebugInfo(false)}
+              >
+                <CustomText style={styles.closeDebugText}>Close Debug</CustomText>
+              </TouchableOpacity>
+            </View>
+          )}
 
             {!parent ? (
               <View style={styles.loadingContainer}>
@@ -121,13 +214,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#333',
+  },
+  debugButton: {
+    padding: 4,
+  },
+  refreshButton: {
+    padding: 4,
   },
   closeButton: {
     fontSize: 24,
     color: '#666',
+  },
+  debugContainer: {
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  closeDebugButton: {
+    backgroundColor: '#666',
+    padding: 8,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  closeDebugText: {
+    color: '#fff',
+    fontSize: 12,
   },
   section: {
     marginBottom: 24,
